@@ -19,7 +19,7 @@ export default function Dashboard() {
     const [copied, setCopied] = useState(false);
     const [editingId, setEditingId] = useState<string | null>(null);
 
-    // Guarda o índice da imagem ativa de cada card de listagem individualmente
+    // Guarda o índice da imagem activa de cada card de listagem individualmente
     const [activeImageIndexes, setActiveImageIndexes] = useState<{ [key: string]: number }>({});
 
     const router = useRouter();
@@ -69,7 +69,6 @@ export default function Dashboard() {
         }
     };
 
-    // Remove imagem da galeria (usado tanto na criação quanto na edição)
     const removeImageFromGallery = (indexToRemove: number) => {
         setImages((prevImages) => {
             const updatedImages = prevImages.filter((_, index) => index !== indexToRemove);
@@ -78,7 +77,6 @@ export default function Dashboard() {
         });
     };
 
-    // Funções para reordenar as imagens no estado temporário (criação e edição)
     const moveImageOrder = (index: number, direction: 'left' | 'right') => {
         if (direction === 'left' && index === 0) return;
         if (direction === 'right' && index === images.length - 1) return;
@@ -168,7 +166,7 @@ export default function Dashboard() {
             </header>
 
             <main className="max-w-5xl mx-auto grid grid-cols-1 md:grid-cols-3 gap-8">
-                {/* Formulário Reativo Esquerdo (Criação e Edição Lateral) */}
+                {/* Formulário Lateral Esquerdo */}
                 <div className="bg-white p-6 rounded-xl shadow-sm border border-gray-200 md:col-span-1 h-fit">
                     <h2 className="text-xl font-semibold mb-4 text-gray-900">{editingId ? 'Editar Registro' : 'Novo Registro'}</h2>
                     <form onSubmit={handleSaveOrUpdate} className="space-y-4">
@@ -191,7 +189,6 @@ export default function Dashboard() {
                             </label>
                         </div>
 
-                        {/* RETORNADO: Miniaturas com Ordenador e Exclusão na INCLUSÃO de Novo Registro */}
                         {!editingId && images.length > 0 && (
                             <div className="p-1">
                                 <p className="text-[11px] font-semibold text-gray-500 mb-1.5">Organizar fotos antes de salvar:</p>
@@ -199,8 +196,6 @@ export default function Dashboard() {
                                     {images.map((img, idx) => (
                                         <div key={idx} className="relative h-14 w-full border rounded bg-white group/formthumb">
                                             <img src={img} className="h-full w-full object-cover rounded" alt="form-thumb" />
-
-                                            {/* Botão de Excluir individual */}
                                             <button
                                                 type="button"
                                                 onClick={() => removeImageFromGallery(idx)}
@@ -208,8 +203,6 @@ export default function Dashboard() {
                                             >
                                                 ×
                                             </button>
-
-                                            {/* Controles de Ordenação laterais */}
                                             <div className="absolute inset-0 bg-black/40 items-center justify-center gap-1 rounded hidden group-hover/formthumb:flex transition">
                                                 {idx > 0 && (
                                                     <button type="button" onClick={() => moveImageOrder(idx, 'left')} className="bg-white/95 text-gray-800 font-bold text-[9px] w-3.5 h-3.5 rounded hover:bg-white flex items-center justify-center">
@@ -237,7 +230,7 @@ export default function Dashboard() {
                     </form>
                 </div>
 
-                {/* Listagem "Meus Registros" Direita */}
+                {/* Listagem "Meus Registros" */}
                 <div className="bg-white p-6 rounded-xl shadow-sm border border-gray-200 md:col-span-2">
                     <div className="mb-6 p-4 bg-blue-50 border border-blue-200 rounded-xl">
                         <p className="font-semibold text-blue-900 text-sm mb-1.5 flex items-center gap-1.5">
@@ -265,16 +258,33 @@ export default function Dashboard() {
                                 return (
                                     <div key={item._id} className={`border rounded-xl overflow-hidden flex flex-col justify-between bg-white shadow-sm transition ${isThisItemEditing ? 'border-amber-400 ring-2 ring-amber-100' : 'border-gray-200 hover:shadow'}`}>
                                         <div>
-                                            {/* Visualizador Principal do Card */}
+                                            {/* Container da Imagem Principal */}
                                             {gallery.length > 0 ? (
                                                 <div className="w-full h-44 bg-gray-50 flex items-center justify-center p-2 border-b border-gray-100 relative group">
                                                     <img src={gallery[currentImgIndex] || '/placeholder.png'} className="max-w-full max-h-full object-contain rounded-lg" alt={item.title} />
 
+                                                    {/* SETAS ATUALIZADAS: Visíveis em mobile e com fundo com sombra protetora no PC */}
                                                     {gallery.length > 1 && !isThisItemEditing && (
                                                         <>
-                                                            <button type="button" onClick={() => changeCardImageIndex(item._id, 'prev', gallery.length)} className="absolute left-1 top-1/2 -translate-y-1/2 bg-black/50 text-white w-6 h-6 rounded-full flex items-center justify-center text-xs opacity-0 group-hover:opacity-100 transition hover:bg-black/80">&lt;</button>
-                                                            <button type="button" onClick={() => changeCardImageIndex(item._id, 'next', gallery.length)} className="absolute right-1 top-1/2 -translate-y-1/2 bg-black/50 text-white w-6 h-6 rounded-full flex items-center justify-center text-xs opacity-0 group-hover:opacity-100 transition hover:bg-black/80">&gt;</button>
-                                                            <span className="absolute bottom-1 right-2 bg-black/60 text-white text-[10px] px-1.5 py-0.5 rounded font-mono">{currentImgIndex + 1}/{gallery.length}</span>
+                                                            <button
+                                                                type="button"
+                                                                onClick={() => changeCardImageIndex(item._id, 'prev', gallery.length)}
+                                                                className="absolute left-2 top-1/2 -translate-y-1/2 bg-black/60 text-white w-8 h-8 rounded-full flex items-center justify-center text-sm font-bold shadow-md md:opacity-0 md:group-hover:opacity-100 transition duration-200 hover:bg-black/90 hover:scale-105"
+                                                                style={{ textShadow: '0 1px 2px rgba(0,0,0,0.6)' }}
+                                                            >
+                                                                &#10094;
+                                                            </button>
+                                                            <button
+                                                                type="button"
+                                                                onClick={() => changeCardImageIndex(item._id, 'next', gallery.length)}
+                                                                className="absolute right-2 top-1/2 -translate-y-1/2 bg-black/60 text-white w-8 h-8 rounded-full flex items-center justify-center text-sm font-bold shadow-md md:opacity-0 md:group-hover:opacity-100 transition duration-200 hover:bg-black/90 hover:scale-105"
+                                                                style={{ textShadow: '0 1px 2px rgba(0,0,0,0.6)' }}
+                                                            >
+                                                                &#10095;
+                                                            </button>
+                                                            <span className="absolute bottom-1 right-2 bg-black/60 text-white text-[10px] px-1.5 py-0.5 rounded font-mono shadow-sm">
+                                                                {currentImgIndex + 1}/{gallery.length}
+                                                            </span>
                                                         </>
                                                     )}
                                                 </div>
@@ -282,7 +292,7 @@ export default function Dashboard() {
                                                 <div className="w-full h-44 bg-gray-100 flex items-center justify-center text-gray-400 text-xs border-b">Sem imagem</div>
                                             )}
 
-                                            {/* Miniaturas com Ordenador e Botão Excluir em Modo de Edição no Card */}
+                                            {/* Miniaturas com Ordenador e Botão Excluir */}
                                             {isThisItemEditing && gallery.length > 0 && (
                                                 <div className="p-3 bg-amber-50/50 border-b border-amber-100">
                                                     <p className="text-[11px] font-semibold text-amber-800 mb-1.5">Organizar Galeria (Use as setas para ordenar ou × para remover):</p>
@@ -295,19 +305,18 @@ export default function Dashboard() {
                                                                     type="button"
                                                                     onClick={() => removeImageFromGallery(idx)}
                                                                     className="absolute -top-1 -right-1 bg-red-500 text-white w-4 h-4 rounded-full flex items-center justify-center text-[10px] font-bold shadow hover:bg-red-600 transition z-10"
-                                                                    title="Remover foto"
                                                                 >
                                                                     ×
                                                                 </button>
 
                                                                 <div className="absolute inset-0 bg-black/40 items-center justify-center gap-1.5 rounded hidden group-hover/thumb:flex transition">
                                                                     {idx > 0 && (
-                                                                        <button type="button" onClick={() => moveImageOrder(idx, 'left')} className="bg-white/90 text-gray-800 font-bold text-[10px] w-4 h-4 rounded hover:bg-white flex items-center justify-center" title="Mover para esquerda">
+                                                                        <button type="button" onClick={() => moveImageOrder(idx, 'left')} className="bg-white/90 text-gray-800 font-bold text-[10px] w-4 h-4 rounded hover:bg-white flex items-center justify-center">
                                                                             &larr;
                                                                         </button>
                                                                     )}
                                                                     {idx < gallery.length - 1 && (
-                                                                        <button type="button" onClick={() => moveImageOrder(idx, 'right')} className="bg-white/90 text-gray-800 font-bold text-[10px] w-4 h-4 rounded hover:bg-white flex items-center justify-center" title="Mover para direita">
+                                                                        <button type="button" onClick={() => moveImageOrder(idx, 'right')} className="bg-white/90 text-gray-800 font-bold text-[10px] w-4 h-4 rounded hover:bg-white flex items-center justify-center">
                                                                             &rarr;
                                                                         </button>
                                                                     )}

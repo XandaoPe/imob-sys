@@ -3,11 +3,9 @@ import connectDB from '@/lib/mongodb';
 import Item from '@/models/Item';
 import { verifyToken } from '@/lib/auth';
 
-// DELETE: Remove o registro
 export async function DELETE(req: Request, { params }: { params: Promise<{ id: string }> }) {
     try {
         await connectDB();
-
         const tenantId = verifyToken(req);
         if (!tenantId) return NextResponse.json({ error: 'Não autorizado' }, { status: 401 });
 
@@ -25,30 +23,26 @@ export async function DELETE(req: Request, { params }: { params: Promise<{ id: s
     }
 }
 
-// PUT: Atualiza o registro (com suporte a nova imagem base64)
 export async function PUT(req: Request, { params }: { params: Promise<{ id: string }> }) {
     try {
         await connectDB();
-
         const tenantId = verifyToken(req);
         if (!tenantId) return NextResponse.json({ error: 'Não autorizado' }, { status: 401 });
 
         const resolvedParams = await params;
         const itemId = resolvedParams.id;
 
-        const { title, description, imageBase64 } = await req.json();
+        const { title, description, images } = await req.json();
 
-        // Monta o objeto com os campos que serão atualizados
         const updateData: any = { title, description };
-        if (imageBase64) {
-            updateData.imageBase64 = imageBase64; // Só altera a imagem se uma nova for enviada
+        if (images) {
+            updateData.images = images; // Atualiza a galeria completa se enviada
         }
 
-        // Atualiza garantindo o isolamento pelo tenantId
         const updatedItem = await Item.findOneAndUpdate(
             { _id: itemId, tenantId },
             updateData,
-            { new: true } // Retorna o item já atualizado
+            { new: true }
         );
 
         if (!updatedItem) {

@@ -6,18 +6,21 @@ interface Item {
     _id: string;
     title: string;
     description: string;
-    imageBase64?: string;
+    images?: string[];
 }
 
 export default function Dashboard() {
     const [items, setItems] = useState<Item[]>([]);
     const [title, setTitle] = useState('');
     const [description, setDescription] = useState('');
-    const [image, setImage] = useState('');
-    const [fileName, setFileName] = useState('');
+    const [images, setImages] = useState<string[]>([]);
+    const [fileCountText, setFileCountText] = useState('');
     const [shareLink, setShareLink] = useState('');
     const [copied, setCopied] = useState(false);
     const [editingId, setEditingId] = useState<string | null>(null);
+
+    // Guarda o índice da imagem ativa de cada card de listagem individualmente
+    const [activeImageIndexes, setActiveImageIndexes] = useState<{ [key: string]: number }>({});
 
     const router = useRouter();
 
@@ -34,22 +37,44 @@ export default function Dashboard() {
         const res = await fetch('/api/items', {
             headers: { Authorization: `Bearer ${localStorage.getItem('token')}` },
         });
-        if (res.ok) setItems(await res.json());
+        if (res.ok) {
+            const data = await res.json();
+            setItems(data);
+            // Inicializa os índices de imagem dos cards em 0
+            const indexes: { [key: string]: number } = {};
+            data.forEach((item: Item) => { indexes[item._id] = 0; });
+            setActiveImageIndexes(indexes);
+        }
     };
 
-    const handleImageChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-        const file = e.target.files?.[0];
-        if (file) {
-            setFileName(file.name);
-            const reader = new FileReader();
-            reader.onloadend = () => setImage(reader.result as string);
-            reader.readAsDataURL(file);
+    // Trata o upload de múltiplos arquivos de imagem
+    const handleMultipleImagesChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
+        const files = e.target.files;
+        if (files && files.length > 0) {
+            const loadedImages: string[] = [];
+
+            // Transforma os arquivos atuais em Base64
+            for (let i = 0; i < files.length; i++) {
+                const file = files[i];
+                const reader = new FileReader();
+                const promise = new Promise<string>((resolve) => {
+                    reader.onloadend = () => resolve(reader.result as string);
+                });
+                reader.readAsDataURL(file);
+                loadedImages.push(await promise);
+            }
+
+            // SOLUÇÃO: Mantém as imagens que já estavam no estado e adiciona as novas
+            setImages((prevImages) => {
+                const updatedImages = [...prevImages, ...loadedImages];
+                setFileCountText(`${updatedImages.length} foto(s) na galeria`);
+                return updatedImages;
+            });
         }
     };
 
     const handleSaveOrUpdate = async (e: React.FormEvent) => {
         e.preventDefault();
-
         const isEditing = editingId !== null;
         const endpoint = isEditing ? `/api/items/${editingId}` : '/api/items';
         const method = isEditing ? 'PUT' : 'POST';
@@ -60,7 +85,7 @@ export default function Dashboard() {
                 'Content-Type': 'application/json',
                 Authorization: `Bearer ${localStorage.getItem('token')}`,
             },
-            body: JSON.stringify({ title, description, imageBase64: image }),
+            body: JSON.stringify({ title, description, images }),
         });
 
         if (res.ok) {
@@ -69,20 +94,28 @@ export default function Dashboard() {
         }
     };
 
+    const removeImageFromGallery = (indexToRemove: number) => {
+        setImages((prevImages) => {
+            const updatedImages = prevImages.filter((_, index) => index !== indexToRemove);
+            setFileCountText(updatedImages.length > 0 ? `${updatedImages.length} foto(s) na galeria` : 'Nenhuma foto selecionada');
+            return updatedImages;
+        });
+    };
+
     const startEdit = (item: Item) => {
         setEditingId(item._id);
         setTitle(item.title);
         setDescription(item.description);
-        setImage(item.imageBase64 || '');
-        setFileName(item.imageBase64 ? 'Imagem atual mantida' : '');
+        setImages(item.images || []);
+        setFileCountText(item.images && item.images.length > 0 ? `${item.images.length} foto(s) existentes mantida(s)` : '');
     };
 
     const resetForm = () => {
         setEditingId(null);
         setTitle('');
         setDescription('');
-        setImage('');
-        setFileName('');
+        setImages([]);
+        setFileCountText('');
     };
 
     const handleDelete = async (id: string) => {
@@ -103,81 +136,78 @@ export default function Dashboard() {
             setCopied(true);
             setTimeout(() => setCopied(false), 2000);
         } catch (err) {
-            console.error('Falha ao copiar o link: ', err);
+            console.error(err);
         }
+    };
+
+    // Navegação de fotos nos cards individuais
+    const changeCardImageIndex = (itemId: string, direction: 'prev' | 'next', max: number) => {
+        const currentIndex = activeImageIndexes[itemId] || 0;
+        let newIndex = direction === 'next' ? currentIndex + 1 : currentIndex - 1;
+        if (newIndex >= max) newIndex = 0;
+        if (newIndex < 0) newIndex = max - 1;
+        setActiveImageIndexes(prev => ({ ...prev, [itemId]: newIndex }));
     };
 
     return (
         <div className="min-h-screen bg-gray-50 p-6 text-gray-800">
             <header className="max-w-5xl mx-auto flex justify-between items-center mb-8">
                 <h1 className="text-3xl font-bold tracking-tight text-gray-900">Painel de Controle</h1>
-                <button
-                    onClick={() => { localStorage.clear(); router.push('/'); }}
-                    className="bg-red-500 text-white px-4 py-2 rounded-lg font-medium hover:bg-red-600 transition"
-                >
-                    Sair
-                </button>
+                <button onClick={() => { localStorage.clear(); router.push('/'); }} className="bg-red-500 text-white px-4 py-2 rounded-lg font-medium hover:bg-red-600 transition">Sair</button>
             </header>
 
             <main className="max-w-5xl mx-auto grid grid-cols-1 md:grid-cols-3 gap-8">
                 {/* Formulário Reativo (Cadastro / Edição) */}
                 <div className="bg-white p-6 rounded-xl shadow-sm border border-gray-200 md:col-span-1 h-fit">
-                    <h2 className="text-xl font-semibold mb-4 text-gray-900">
-                        {editingId ? 'Editar Registro' : 'Novo Registro'}
-                    </h2>
+                    <h2 className="text-xl font-semibold mb-4 text-gray-900">{editingId ? 'Editar Registro' : 'Novo Registro'}</h2>
                     <form onSubmit={handleSaveOrUpdate} className="space-y-4">
                         <div>
                             <label className="block text-sm font-medium text-gray-700 mb-1">Título</label>
-                            <input type="text" placeholder="Ex: Casa de Campo" value={title} onChange={e => setTitle(e.target.value)} required className="w-full p-2 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:outline-none text-sm" />
+                            <input type="text" placeholder="Ex: Casa de Campo" value={title} onChange={e => setTitle(e.target.value)} required className="w-full p-2 border rounded-lg focus:ring-2 focus:ring-blue-500 text-sm focus:outline-none" />
                         </div>
 
                         <div>
                             <label className="block text-sm font-medium text-gray-700 mb-1">Descrição</label>
-                            <textarea placeholder="Detalhes do registro..." value={description} onChange={e => setDescription(e.target.value)} required className="w-full p-2 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:outline-none text-sm h-24" />
+                            <textarea placeholder="Detalhes do registro..." value={description} onChange={e => setDescription(e.target.value)} required className="w-full p-2 border rounded-lg focus:ring-2 focus:ring-blue-500 text-sm focus:outline-none h-24" />
                         </div>
 
                         <div>
-                            <label className="block text-sm font-medium text-gray-700 mb-1">
-                                {editingId ? 'Alterar Imagem (Opcional)' : 'Imagem do Registro'}
+                            <label className="block text-sm font-medium text-gray-700 mb-1">{editingId ? 'Alterar Imagens (Opcional)' : 'Imagens do Registro (Selecione uma ou mais)'}</label>
+                            <label className="flex flex-col items-center justify-center w-full h-28 border-2 border-gray-300 border-dashed rounded-lg cursor-pointer bg-gray-50 hover:bg-gray-100 transition p-2 text-center">
+                                <svg className="w-7 h-7 mb-1 text-gray-500" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"></path></svg>
+                                <p className="text-xs text-gray-700 font-semibold">{fileCountText ? fileCountText : 'Clique para selecionar fotos'}</p>
+                                <p className="text-[10px] text-gray-400 mt-0.5">Permite escolher múltiplos arquivos simultâneos</p>
+                                <input type="file" accept="image/*" multiple onChange={handleMultipleImagesChange} className="hidden" />
                             </label>
-                            <div className="flex items-center justify-center w-full">
-                                <label className="flex flex-col items-center justify-center w-full h-32 border-2 border-gray-300 border-dashed rounded-lg cursor-pointer bg-gray-50 hover:bg-gray-100 transition">
-                                    <div className="flex flex-col items-center justify-center pt-5 pb-6 px-2 text-center">
-                                        <svg className="w-8 h-8 mb-2 text-gray-500" aria-hidden="true" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 20 16">
-                                            <path stroke="currentColor" strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M13 13h3a3 3 0 0 0 0-6h-.025A5.56 5.56 0 0 0 16 6.5 5.5 5.5 0 0 0 5.207 5.021C5.137 5.017 5.071 5 5 5a4 4 0 0 0 0 8h2.167M10 15V6m0 0L8 8m2-2 2 2" />
-                                        </svg>
-                                        <p className="text-xs text-gray-700 font-semibold">
-                                            {fileName ? 'Nova imagem/Arquivo pronto!' : 'Clique para substituir/enviar'}
-                                        </p>
-                                        <p className="text-[11px] text-gray-500 mt-0.5 truncate max-w-xs">
-                                            {fileName ? fileName : 'Formatos aceitos: PNG, JPG ou WEBP'}
-                                        </p>
-                                    </div>
-                                    <input type="file" accept="image/*" onChange={handleImageChange} className="hidden" />
-                                </label>
-                            </div>
                         </div>
 
-                        {image && (
-                            <div className="mt-2">
-                                <p className="text-xs font-medium text-gray-500 mb-1">Visualização:</p>
-                                {/* Visualização interna também protegida contra cortes */}
-                                <div className="w-full h-36 bg-gray-100 flex items-center justify-center p-1 rounded-lg border">
-                                    <img src={image} className="max-w-full max-h-full object-contain rounded" alt="Preview" />
+                        {/* Visualização da Galeria no Formulário com opção de Remover */}
+                        {images.length > 0 && (
+                            <div>
+                                <p className="text-xs font-medium text-gray-500 mb-1">Imagens selecionadas ({images.length}):</p>
+                                <div className="grid grid-cols-4 gap-2 max-h-24 overflow-y-auto border p-1.5 rounded-lg bg-gray-50">
+                                    {images.map((img, i) => (
+                                        <div key={i} className="relative group h-12 w-full">
+                                            <img src={img} className="h-full w-full object-cover rounded border" alt="preview-thumb" />
+                                            <button
+                                                type="button"
+                                                onClick={() => removeImageFromGallery(i)}
+                                                className="absolute -top-1 -right-1 bg-red-500 text-white w-4 h-4 rounded-full flex items-center justify-center text-[9px] font-bold shadow hover:bg-red-600 transition"
+                                                title="Remover imagem"
+                                            >
+                                                ×
+                                            </button>
+                                        </div>
+                                    ))}
                                 </div>
                             </div>
                         )}
-
-                        <div className="flex flex-col gap-2 pt-2">
+                        
+                        <div className="flex flex-col gap-2 pt-1">
                             <button type="submit" className={`w-full text-white p-2.5 rounded-lg font-medium transition shadow-sm ${editingId ? 'bg-amber-500 hover:bg-amber-600' : 'bg-blue-600 hover:bg-blue-700'}`}>
                                 {editingId ? 'Salvar Alterações' : 'Salvar Registro'}
                             </button>
-
-                            {editingId && (
-                                <button type="button" onClick={resetForm} className="w-full bg-gray-100 text-gray-600 p-2.5 rounded-lg font-medium hover:bg-gray-200 transition">
-                                    Cancelar Edição
-                                </button>
-                            )}
+                            {editingId && <button type="button" onClick={resetForm} className="w-full bg-gray-100 text-gray-600 p-2.5 rounded-lg font-medium hover:bg-gray-200 transition">Cancelar Edição</button>}
                         </div>
                     </form>
                 </div>
@@ -190,31 +220,9 @@ export default function Dashboard() {
                             Link de Compartilhamento Público:
                         </p>
                         <div className="flex gap-2">
-                            <input
-                                type="text"
-                                readOnly
-                                value={shareLink}
-                                className="flex-1 p-2.5 bg-white border border-gray-300 rounded-lg text-xs select-all text-blue-600 font-mono focus:outline-none"
-                            />
-                            <button
-                                type="button"
-                                onClick={copyToClipboard}
-                                className={`px-4 rounded-lg font-medium text-xs transition shadow-sm border flex items-center justify-center gap-1 min-w-[90px] ${copied
-                                        ? 'bg-green-50 text-green-700 border-green-200'
-                                        : 'bg-white text-gray-700 border-gray-300 hover:bg-gray-50'
-                                    }`}
-                            >
-                                {copied ? (
-                                    <>
-                                        <svg className="w-3.5 h-3.5 text-green-600" fill="none" stroke="currentColor" strokeWidth="2.5" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7"></path></svg>
-                                        Copiado!
-                                    </>
-                                ) : (
-                                    <>
-                                        <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" d="M8 5H6a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2v-1M8 5a2 2 0 002 2h2a2 2 0 002-2M8 5a2 2 0 012-2h2a2 2 0 012 2m0 0h2a2 2 0 012 2v3m2 4H10m0 0l3-3m-3 3l3 3"></path></svg>
-                                        Copiar
-                                    </>
-                                )}
+                            <input type="text" readOnly value={shareLink} className="flex-1 p-2.5 bg-white border border-gray-300 rounded-lg text-xs select-all text-blue-600 font-mono focus:outline-none" />
+                            <button type="button" onClick={copyToClipboard} className={`px-4 rounded-lg font-medium text-xs transition border flex items-center justify-center gap-1 min-w-[90px] ${copied ? 'bg-green-50 text-green-700 border-green-200' : 'bg-white text-gray-700 border-gray-300 hover:bg-gray-50'}`}>
+                                {copied ? 'Copiado!' : 'Copiar'}
                             </button>
                         </div>
                     </div>
@@ -224,34 +232,42 @@ export default function Dashboard() {
                         <p className="text-sm text-gray-500 text-center py-8">Nenhum registro cadastrado ainda.</p>
                     ) : (
                         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                            {items.map(item => (
-                                <div key={item._id} className="border border-gray-200 rounded-xl overflow-hidden flex flex-col justify-between bg-white shadow-sm hover:shadow transition">
-                                    <div>
-                                        {/* Alterado aqui: Container interno com contenção total da imagem */}
-                                        {item.imageBase64 ? (
-                                            <div className="w-full h-44 bg-gray-50 flex items-center justify-center p-2 border-b border-gray-100">
-                                                <img src={item.imageBase64} className="max-w-full max-h-full object-contain rounded-lg" alt={item.title} />
+                            {items.map(item => {
+                                const gallery = item.images || [];
+                                const currentImgIndex = activeImageIndexes[item._id] || 0;
+
+                                return (
+                                    <div key={item._id} className="border border-gray-200 rounded-xl overflow-hidden flex flex-col justify-between bg-white shadow-sm hover:shadow transition">
+                                        <div>
+                                            {/* Container da Galeria com Navegadores Laterais */}
+                                            {gallery.length > 0 ? (
+                                                <div className="w-full h-44 bg-gray-50 flex items-center justify-center p-2 border-b border-gray-100 relative group">
+                                                    <img src={gallery[currentImgIndex]} className="max-w-full max-h-full object-contain rounded-lg" alt={item.title} />
+
+                                                    {gallery.length > 1 && (
+                                                        <>
+                                                            <button onClick={() => changeCardImageIndex(item._id, 'prev', gallery.length)} className="absolute left-1 top-1/2 -translate-y-1/2 bg-black/50 text-white w-6 h-6 rounded-full flex items-center justify-center text-xs opacity-0 group-hover:opacity-100 transition hover:bg-black/80">&lt;</button>
+                                                            <button onClick={() => changeCardImageIndex(item._id, 'next', gallery.length)} className="absolute right-1 top-1/2 -translate-y-1/2 bg-black/50 text-white w-6 h-6 rounded-full flex items-center justify-center text-xs opacity-0 group-hover:opacity-100 transition hover:bg-black/80">&gt;</button>
+                                                            <span className="absolute bottom-1 right-2 bg-black/60 text-white text-[10px] px-1.5 py-0.5 rounded font-mono">{currentImgIndex + 1}/{gallery.length}</span>
+                                                        </>
+                                                    )}
+                                                </div>
+                                            ) : (
+                                                <div className="w-full h-44 bg-gray-100 flex items-center justify-center text-gray-400 text-xs border-b">Sem imagem</div>
+                                            )}
+
+                                            <div className="p-4">
+                                                <h3 className="font-bold text-gray-900 text-lg leading-tight mb-1">{item.title}</h3>
+                                                <p className="text-sm text-gray-600 line-clamp-3">{item.description}</p>
                                             </div>
-                                        ) : (
-                                            <div className="w-full h-44 bg-gray-100 flex items-center justify-center text-gray-400 text-xs border-b">
-                                                Sem imagem
-                                            </div>
-                                        )}
-                                        <div className="p-4">
-                                            <h3 className="font-bold text-gray-900 text-lg leading-tight mb-1">{item.title}</h3>
-                                            <p className="text-sm text-gray-600 line-clamp-3">{item.description}</p>
+                                        </div>
+                                        <div className="p-4 pt-0 grid grid-cols-2 gap-2">
+                                            <button onClick={() => startEdit(item)} className="bg-amber-50 text-amber-700 py-2 rounded-lg hover:bg-amber-100 text-sm font-medium transition border border-amber-200">Editar</button>
+                                            <button onClick={() => handleDelete(item._id)} className="bg-red-50 text-red-600 py-2 rounded-lg hover:bg-red-100 text-sm font-medium transition border border-red-200">Excluir</button>
                                         </div>
                                     </div>
-                                    <div className="p-4 pt-0 grid grid-cols-2 gap-2">
-                                        <button onClick={() => startEdit(item)} className="bg-amber-50 text-amber-700 py-2 rounded-lg hover:bg-amber-100 text-sm font-medium transition border border-amber-200">
-                                            Editar
-                                        </button>
-                                        <button onClick={() => handleDelete(item._id)} className="bg-red-50 text-red-600 py-2 rounded-lg hover:bg-red-100 text-sm font-medium transition border border-red-200">
-                                            Excluir
-                                        </button>
-                                    </div>
-                                </div>
-                            ))}
+                                );
+                            })}
                         </div>
                     )}
                 </div>

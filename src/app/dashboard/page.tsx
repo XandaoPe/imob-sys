@@ -40,20 +40,17 @@ export default function Dashboard() {
         if (res.ok) {
             const data = await res.json();
             setItems(data);
-            // Inicializa os índices de imagem dos cards em 0
             const indexes: { [key: string]: number } = {};
             data.forEach((item: Item) => { indexes[item._id] = 0; });
             setActiveImageIndexes(indexes);
         }
     };
 
-    // Trata o upload de múltiplos arquivos de imagem
     const handleMultipleImagesChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
         const files = e.target.files;
         if (files && files.length > 0) {
             const loadedImages: string[] = [];
 
-            // Transforma os arquivos atuais em Base64
             for (let i = 0; i < files.length; i++) {
                 const file = files[i];
                 const reader = new FileReader();
@@ -64,13 +61,36 @@ export default function Dashboard() {
                 loadedImages.push(await promise);
             }
 
-            // SOLUÇÃO: Mantém as imagens que já estavam no estado e adiciona as novas
             setImages((prevImages) => {
                 const updatedImages = [...prevImages, ...loadedImages];
                 setFileCountText(`${updatedImages.length} foto(s) na galeria`);
                 return updatedImages;
             });
         }
+    };
+
+    // Remove imagem da galeria (usado tanto na criação quanto na edição)
+    const removeImageFromGallery = (indexToRemove: number) => {
+        setImages((prevImages) => {
+            const updatedImages = prevImages.filter((_, index) => index !== indexToRemove);
+            setFileCountText(updatedImages.length > 0 ? `${updatedImages.length} foto(s) na galeria` : 'Nenhuma foto selecionada');
+            return updatedImages;
+        });
+    };
+
+    // Funções para reordenar as imagens no estado temporário (criação e edição)
+    const moveImageOrder = (index: number, direction: 'left' | 'right') => {
+        if (direction === 'left' && index === 0) return;
+        if (direction === 'right' && index === images.length - 1) return;
+
+        const targetIndex = direction === 'left' ? index - 1 : index + 1;
+        const updatedImages = [...images];
+
+        const temp = updatedImages[index];
+        updatedImages[index] = updatedImages[targetIndex];
+        updatedImages[targetIndex] = temp;
+
+        setImages(updatedImages);
     };
 
     const handleSaveOrUpdate = async (e: React.FormEvent) => {
@@ -94,20 +114,12 @@ export default function Dashboard() {
         }
     };
 
-    const removeImageFromGallery = (indexToRemove: number) => {
-        setImages((prevImages) => {
-            const updatedImages = prevImages.filter((_, index) => index !== indexToRemove);
-            setFileCountText(updatedImages.length > 0 ? `${updatedImages.length} foto(s) na galeria` : 'Nenhuma foto selecionada');
-            return updatedImages;
-        });
-    };
-
     const startEdit = (item: Item) => {
         setEditingId(item._id);
         setTitle(item.title);
         setDescription(item.description);
         setImages(item.images || []);
-        setFileCountText(item.images && item.images.length > 0 ? `${item.images.length} foto(s) existentes mantida(s)` : '');
+        setFileCountText(item.images && item.images.length > 0 ? `${item.images.length} foto(s) carregada(s)` : '');
     };
 
     const resetForm = () => {
@@ -140,7 +152,6 @@ export default function Dashboard() {
         }
     };
 
-    // Navegação de fotos nos cards individuais
     const changeCardImageIndex = (itemId: string, direction: 'prev' | 'next', max: number) => {
         const currentIndex = activeImageIndexes[itemId] || 0;
         let newIndex = direction === 'next' ? currentIndex + 1 : currentIndex - 1;
@@ -157,7 +168,7 @@ export default function Dashboard() {
             </header>
 
             <main className="max-w-5xl mx-auto grid grid-cols-1 md:grid-cols-3 gap-8">
-                {/* Formulário Reativo (Cadastro / Edição) */}
+                {/* Formulário Reativo Esquerdo (Criação e Edição Lateral) */}
                 <div className="bg-white p-6 rounded-xl shadow-sm border border-gray-200 md:col-span-1 h-fit">
                     <h2 className="text-xl font-semibold mb-4 text-gray-900">{editingId ? 'Editar Registro' : 'Novo Registro'}</h2>
                     <form onSubmit={handleSaveOrUpdate} className="space-y-4">
@@ -172,37 +183,51 @@ export default function Dashboard() {
                         </div>
 
                         <div>
-                            <label className="block text-sm font-medium text-gray-700 mb-1">{editingId ? 'Alterar Imagens (Opcional)' : 'Imagens do Registro (Selecione uma ou mais)'}</label>
-                            <label className="flex flex-col items-center justify-center w-full h-28 border-2 border-gray-300 border-dashed rounded-lg cursor-pointer bg-gray-50 hover:bg-gray-100 transition p-2 text-center">
-                                <svg className="w-7 h-7 mb-1 text-gray-500" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"></path></svg>
-                                <p className="text-xs text-gray-700 font-semibold">{fileCountText ? fileCountText : 'Clique para selecionar fotos'}</p>
-                                <p className="text-[10px] text-gray-400 mt-0.5">Permite escolher múltiplos arquivos simultâneos</p>
+                            <label className="block text-sm font-medium text-gray-700 mb-1">Imagens do Registro</label>
+                            <label className="flex flex-col items-center justify-center w-full h-24 border-2 border-gray-300 border-dashed rounded-lg cursor-pointer bg-gray-50 hover:bg-gray-100 transition p-2 text-center">
+                                <svg className="w-6 h-6 mb-1 text-gray-500" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"></path></svg>
+                                <p className="text-xs text-gray-700 font-semibold">{fileCountText ? fileCountText : 'Adicionar fotos'}</p>
                                 <input type="file" accept="image/*" multiple onChange={handleMultipleImagesChange} className="hidden" />
                             </label>
                         </div>
 
-                        {/* Visualização da Galeria no Formulário com opção de Remover */}
-                        {images.length > 0 && (
-                            <div>
-                                <p className="text-xs font-medium text-gray-500 mb-1">Imagens selecionadas ({images.length}):</p>
-                                <div className="grid grid-cols-4 gap-2 max-h-24 overflow-y-auto border p-1.5 rounded-lg bg-gray-50">
-                                    {images.map((img, i) => (
-                                        <div key={i} className="relative group h-12 w-full">
-                                            <img src={img} className="h-full w-full object-cover rounded border" alt="preview-thumb" />
+                        {/* RETORNADO: Miniaturas com Ordenador e Exclusão na INCLUSÃO de Novo Registro */}
+                        {!editingId && images.length > 0 && (
+                            <div className="p-1">
+                                <p className="text-[11px] font-semibold text-gray-500 mb-1.5">Organizar fotos antes de salvar:</p>
+                                <div className="grid grid-cols-3 gap-2 max-h-32 overflow-y-auto p-1.5 bg-gray-50 border rounded-lg">
+                                    {images.map((img, idx) => (
+                                        <div key={idx} className="relative h-14 w-full border rounded bg-white group/formthumb">
+                                            <img src={img} className="h-full w-full object-cover rounded" alt="form-thumb" />
+
+                                            {/* Botão de Excluir individual */}
                                             <button
                                                 type="button"
-                                                onClick={() => removeImageFromGallery(i)}
-                                                className="absolute -top-1 -right-1 bg-red-500 text-white w-4 h-4 rounded-full flex items-center justify-center text-[9px] font-bold shadow hover:bg-red-600 transition"
-                                                title="Remover imagem"
+                                                onClick={() => removeImageFromGallery(idx)}
+                                                className="absolute -top-1 -right-1 bg-red-500 text-white w-4 h-4 rounded-full flex items-center justify-center text-[10px] font-bold shadow hover:bg-red-600 transition z-10"
                                             >
                                                 ×
                                             </button>
+
+                                            {/* Controles de Ordenação laterais */}
+                                            <div className="absolute inset-0 bg-black/40 items-center justify-center gap-1 rounded hidden group-hover/formthumb:flex transition">
+                                                {idx > 0 && (
+                                                    <button type="button" onClick={() => moveImageOrder(idx, 'left')} className="bg-white/95 text-gray-800 font-bold text-[9px] w-3.5 h-3.5 rounded hover:bg-white flex items-center justify-center">
+                                                        &larr;
+                                                    </button>
+                                                )}
+                                                {idx < images.length - 1 && (
+                                                    <button type="button" onClick={() => moveImageOrder(idx, 'right')} className="bg-white/95 text-gray-800 font-bold text-[9px] w-3.5 h-3.5 rounded hover:bg-white flex items-center justify-center">
+                                                        &rarr;
+                                                    </button>
+                                                )}
+                                            </div>
                                         </div>
                                     ))}
                                 </div>
                             </div>
                         )}
-                        
+
                         <div className="flex flex-col gap-2 pt-1">
                             <button type="submit" className={`w-full text-white p-2.5 rounded-lg font-medium transition shadow-sm ${editingId ? 'bg-amber-500 hover:bg-amber-600' : 'bg-blue-600 hover:bg-blue-700'}`}>
                                 {editingId ? 'Salvar Alterações' : 'Salvar Registro'}
@@ -212,7 +237,7 @@ export default function Dashboard() {
                     </form>
                 </div>
 
-                {/* Listagem de Itens e Link */}
+                {/* Listagem "Meus Registros" Direita */}
                 <div className="bg-white p-6 rounded-xl shadow-sm border border-gray-200 md:col-span-2">
                     <div className="mb-6 p-4 bg-blue-50 border border-blue-200 rounded-xl">
                         <p className="font-semibold text-blue-900 text-sm mb-1.5 flex items-center gap-1.5">
@@ -233,21 +258,22 @@ export default function Dashboard() {
                     ) : (
                         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                             {items.map(item => {
-                                const gallery = item.images || [];
+                                const isThisItemEditing = editingId === item._id;
+                                const gallery = isThisItemEditing ? images : (item.images || []);
                                 const currentImgIndex = activeImageIndexes[item._id] || 0;
 
                                 return (
-                                    <div key={item._id} className="border border-gray-200 rounded-xl overflow-hidden flex flex-col justify-between bg-white shadow-sm hover:shadow transition">
+                                    <div key={item._id} className={`border rounded-xl overflow-hidden flex flex-col justify-between bg-white shadow-sm transition ${isThisItemEditing ? 'border-amber-400 ring-2 ring-amber-100' : 'border-gray-200 hover:shadow'}`}>
                                         <div>
-                                            {/* Container da Galeria com Navegadores Laterais */}
+                                            {/* Visualizador Principal do Card */}
                                             {gallery.length > 0 ? (
                                                 <div className="w-full h-44 bg-gray-50 flex items-center justify-center p-2 border-b border-gray-100 relative group">
-                                                    <img src={gallery[currentImgIndex]} className="max-w-full max-h-full object-contain rounded-lg" alt={item.title} />
+                                                    <img src={gallery[currentImgIndex] || '/placeholder.png'} className="max-w-full max-h-full object-contain rounded-lg" alt={item.title} />
 
-                                                    {gallery.length > 1 && (
+                                                    {gallery.length > 1 && !isThisItemEditing && (
                                                         <>
-                                                            <button onClick={() => changeCardImageIndex(item._id, 'prev', gallery.length)} className="absolute left-1 top-1/2 -translate-y-1/2 bg-black/50 text-white w-6 h-6 rounded-full flex items-center justify-center text-xs opacity-0 group-hover:opacity-100 transition hover:bg-black/80">&lt;</button>
-                                                            <button onClick={() => changeCardImageIndex(item._id, 'next', gallery.length)} className="absolute right-1 top-1/2 -translate-y-1/2 bg-black/50 text-white w-6 h-6 rounded-full flex items-center justify-center text-xs opacity-0 group-hover:opacity-100 transition hover:bg-black/80">&gt;</button>
+                                                            <button type="button" onClick={() => changeCardImageIndex(item._id, 'prev', gallery.length)} className="absolute left-1 top-1/2 -translate-y-1/2 bg-black/50 text-white w-6 h-6 rounded-full flex items-center justify-center text-xs opacity-0 group-hover:opacity-100 transition hover:bg-black/80">&lt;</button>
+                                                            <button type="button" onClick={() => changeCardImageIndex(item._id, 'next', gallery.length)} className="absolute right-1 top-1/2 -translate-y-1/2 bg-black/50 text-white w-6 h-6 rounded-full flex items-center justify-center text-xs opacity-0 group-hover:opacity-100 transition hover:bg-black/80">&gt;</button>
                                                             <span className="absolute bottom-1 right-2 bg-black/60 text-white text-[10px] px-1.5 py-0.5 rounded font-mono">{currentImgIndex + 1}/{gallery.length}</span>
                                                         </>
                                                     )}
@@ -256,14 +282,53 @@ export default function Dashboard() {
                                                 <div className="w-full h-44 bg-gray-100 flex items-center justify-center text-gray-400 text-xs border-b">Sem imagem</div>
                                             )}
 
+                                            {/* Miniaturas com Ordenador e Botão Excluir em Modo de Edição no Card */}
+                                            {isThisItemEditing && gallery.length > 0 && (
+                                                <div className="p-3 bg-amber-50/50 border-b border-amber-100">
+                                                    <p className="text-[11px] font-semibold text-amber-800 mb-1.5">Organizar Galeria (Use as setas para ordenar ou × para remover):</p>
+                                                    <div className="grid grid-cols-4 gap-2 max-h-24 overflow-y-auto p-1 bg-white border border-amber-200 rounded-lg">
+                                                        {gallery.map((img, idx) => (
+                                                            <div key={idx} className="relative h-12 w-full border rounded bg-gray-50 group/thumb">
+                                                                <img src={img} className="h-full w-full object-cover rounded" alt="thumb" />
+
+                                                                <button
+                                                                    type="button"
+                                                                    onClick={() => removeImageFromGallery(idx)}
+                                                                    className="absolute -top-1 -right-1 bg-red-500 text-white w-4 h-4 rounded-full flex items-center justify-center text-[10px] font-bold shadow hover:bg-red-600 transition z-10"
+                                                                    title="Remover foto"
+                                                                >
+                                                                    ×
+                                                                </button>
+
+                                                                <div className="absolute inset-0 bg-black/40 items-center justify-center gap-1.5 rounded hidden group-hover/thumb:flex transition">
+                                                                    {idx > 0 && (
+                                                                        <button type="button" onClick={() => moveImageOrder(idx, 'left')} className="bg-white/90 text-gray-800 font-bold text-[10px] w-4 h-4 rounded hover:bg-white flex items-center justify-center" title="Mover para esquerda">
+                                                                            &larr;
+                                                                        </button>
+                                                                    )}
+                                                                    {idx < gallery.length - 1 && (
+                                                                        <button type="button" onClick={() => moveImageOrder(idx, 'right')} className="bg-white/90 text-gray-800 font-bold text-[10px] w-4 h-4 rounded hover:bg-white flex items-center justify-center" title="Mover para direita">
+                                                                            &rarr;
+                                                                        </button>
+                                                                    )}
+                                                                </div>
+                                                            </div>
+                                                        ))}
+                                                    </div>
+                                                </div>
+                                            )}
+
                                             <div className="p-4">
                                                 <h3 className="font-bold text-gray-900 text-lg leading-tight mb-1">{item.title}</h3>
                                                 <p className="text-sm text-gray-600 line-clamp-3">{item.description}</p>
                                             </div>
                                         </div>
+
                                         <div className="p-4 pt-0 grid grid-cols-2 gap-2">
-                                            <button onClick={() => startEdit(item)} className="bg-amber-50 text-amber-700 py-2 rounded-lg hover:bg-amber-100 text-sm font-medium transition border border-amber-200">Editar</button>
-                                            <button onClick={() => handleDelete(item._id)} className="bg-red-50 text-red-600 py-2 rounded-lg hover:bg-red-100 text-sm font-medium transition border border-red-200">Excluir</button>
+                                            <button type="button" onClick={() => startEdit(item)} className={`py-2 rounded-lg text-sm font-medium transition border ${isThisItemEditing ? 'bg-amber-500 text-white border-amber-500' : 'bg-amber-50 text-amber-700 hover:bg-amber-100 border-amber-200'}`}>
+                                                {isThisItemEditing ? 'Editando...' : 'Editar'}
+                                            </button>
+                                            <button type="button" onClick={() => handleDelete(item._id)} className="bg-red-50 text-red-600 py-2 rounded-lg hover:bg-red-100 text-sm font-medium transition border border-red-200">Excluir</button>
                                         </div>
                                     </div>
                                 );

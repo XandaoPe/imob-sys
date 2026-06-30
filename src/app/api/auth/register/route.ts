@@ -6,7 +6,7 @@ import bcrypt from 'bcryptjs';
 export async function POST(req: Request) {
     try {
         await connectDB();
-        const { name, email, phone, password } = await req.json();
+        const { name, email, phone, password, businessCardLink } = await req.json();
 
         const cleanPhone = phone.replace(/\D/g, '');
 
@@ -19,13 +19,16 @@ export async function POST(req: Request) {
 
         const hashedPassword = await bcrypt.hash(password, 10);
 
-        // Gravando como passwordHash para respeitar a validação do banco
-        await Tenant.create({
+        // Gravando as informações atualizadas do perfil
+        const newTenant = new Tenant({
             name,
             email,
             phone: cleanPhone,
             passwordHash: hashedPassword,
+            businessCardLink: businessCardLink || '', // Armazena o link enviado
         });
+
+        await newTenant.save();
 
         return NextResponse.json({ message: 'Registrado com sucesso' }, { status: 201 });
     } catch (error: any) {

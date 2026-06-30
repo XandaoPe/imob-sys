@@ -12,6 +12,7 @@ interface Item {
 interface TenantData {
     tenantName: string;
     tenantPhone: string;
+    businessCardLink?: string; // Vinculado diretamente ao Corretor
     items: Item[];
 }
 
@@ -63,8 +64,9 @@ export default function PublicSharePage() {
 
     return (
         <div className="min-h-screen bg-gray-50 p-6 text-gray-800">
-            <header className="max-w-5xl mx-auto text-center mb-12 mt-6 bg-white p-6 rounded-2xl border shadow-xs">
+            <header className="max-w-5xl mx-auto text-center mb-12 mt-6 bg-white p-6 rounded-2xl border shadow-xs flex flex-col items-center">
                 <h1 className="text-4xl font-extrabold tracking-tight text-gray-900 mb-1">{data.tenantName}</h1>
+
                 {data.tenantPhone && (
                     <div className="mt-2 flex items-center justify-center gap-1.5 text-sm font-semibold text-green-600 bg-green-50 w-fit mx-auto px-3 py-1 rounded-full border border-green-200">
                         <svg className="w-4 h-4" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" d="M3 5a2 2 0 012-2h3.28a1 1 0 01.94.725l.548 2.2a1 1 0 01-.321.988l-1.305.98a10.582 10.582 0 004.872 4.872l.98-1.305a1 1 0 01.988-.321l2.2.548a1 1 0 01.725.94V19a2 2 0 01-2 2h-1C9.716 21 3 14.284 3 6V5z"></path></svg>
@@ -73,6 +75,24 @@ export default function PublicSharePage() {
                         </a>
                     </div>
                 )}
+
+                {/* NOVO POSICIONAMENTO DO BOTÃO: Renderiza uma única vez no Header se o corretor possuir o link */}
+                {data.businessCardLink && (
+                    <div className="mt-4 w-full max-w-sm">
+                        <a
+                            href={data.businessCardLink}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="w-full bg-gradient-to-r from-blue-600 to-indigo-600 text-white py-2.5 px-4 rounded-xl text-xs font-semibold flex items-center justify-center gap-1.5 hover:from-blue-700 hover:to-indigo-700 shadow-sm transition-all transform hover:-translate-y-0.5"
+                        >
+                            <svg className="w-4 h-4" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
+                                <path strokeLinecap="round" strokeLinejoin="round" d="M10 6H5a2 2 0 00-2 2v9a2 2 0 002 2h14a2 2 0 002-2v-5M16.5 3.5l3.5 3.5m0 0l-3.5 3.5m3.5-3.5H11" />
+                            </svg>
+                            Clique aqui para visualizar informações de contato
+                        </a>
+                    </div>
+                )}
+
                 <p className="text-xs text-gray-400 mt-3">Registros liberados para visualização pública</p>
             </header>
 
@@ -86,27 +106,27 @@ export default function PublicSharePage() {
                             const currentIdx = activeIndexes[item._id] || 0;
 
                             return (
-                                <div key={item._id} className="bg-white border border-gray-200 rounded-xl overflow-hidden shadow-sm hover:shadow-md transition flex flex-col">
-                                    {gallery.length > 0 ? (
-                                        <div className="w-full h-56 bg-gray-100 flex items-center justify-center p-2 border-b border-gray-100 relative group">
-                                            <img src={gallery[currentIdx]} className="max-w-full max-h-full object-contain rounded-lg" alt={item.title} />
+                                <div key={item._id} className="bg-white border border-gray-200 rounded-xl overflow-hidden shadow-sm hover:shadow-md transition flex flex-col justify-between">
+                                    <div>
+                                        {gallery.length > 0 ? (
+                                            <div className="w-full h-56 bg-gray-100 flex items-center justify-center p-2 border-b border-gray-100 relative group">
+                                                <img src={gallery[currentIdx]} className="max-w-full max-h-full object-contain rounded-lg" alt={item.title} />
 
-                                            {gallery.length > 1 && (
-                                                <>
-                                                    <button onClick={() => prevImage(item._id, gallery.length)} className="absolute left-2 top-1/2 -translate-y-1/2 bg-black/40 text-white w-7 h-7 rounded-full flex items-center justify-center font-bold text-sm hover:bg-black/70 transition">&lt;</button>
-                                                    <button onClick={() => nextImage(item._id, gallery.length)} className="absolute right-2 top-1/2 -translate-y-1/2 bg-black/40 text-white w-7 h-7 rounded-full flex items-center justify-center font-bold text-sm hover:bg-black/70 transition">&gt;</button>
-                                                    <div className="absolute bottom-2 left-1/2 -translate-x-1/2 bg-black/50 text-white text-[10px] px-2 py-0.5 rounded-full font-mono">
-                                                        {currentIdx + 1} / {gallery.length}
-                                                    </div>
-                                                </>
-                                            )}
-                                        </div>
-                                    ) : (
-                                        <div className="w-full h-56 bg-gray-200 flex items-center justify-center text-gray-400 text-xs border-b">Sem imagem disponível</div>
-                                    )}
+                                                {gallery.length > 1 && (
+                                                    <>
+                                                        <button onClick={() => prevImage(item._id, gallery.length)} className="absolute left-2 top-1/2 -translate-y-1/2 bg-black/40 text-white w-7 h-7 rounded-full flex items-center justify-center font-bold text-sm hover:bg-black/70 transition">&lt;</button>
+                                                        <button onClick={() => nextImage(item._id, gallery.length)} className="absolute right-2 top-1/2 -translate-y-1/2 bg-black/40 text-white w-7 h-7 rounded-full flex items-center justify-center font-bold text-sm hover:bg-black/70 transition">&gt;</button>
+                                                        <div className="absolute bottom-2 left-1/2 -translate-x-1/2 bg-black/50 text-white text-[10px] px-2 py-0.5 rounded-full font-mono">
+                                                            {currentIdx + 1} / {gallery.length}
+                                                        </div>
+                                                    </>
+                                                )}
+                                            </div>
+                                        ) : (
+                                            <div className="w-full h-56 bg-gray-200 flex items-center justify-center text-gray-400 text-xs border-b">Sem imagem disponível</div>
+                                        )}
 
-                                    <div className="p-5 flex-1 flex flex-col justify-between">
-                                        <div>
+                                        <div className="p-5 flex-1">
                                             <h3 className="font-bold text-gray-900 text-lg leading-snug mb-2">{item.title}</h3>
                                             <p className="text-sm text-gray-600 whitespace-pre-wrap">{item.description}</p>
                                         </div>

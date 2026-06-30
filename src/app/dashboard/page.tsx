@@ -103,7 +103,7 @@ export default function Dashboard() {
                 'Content-Type': 'application/json',
                 Authorization: `Bearer ${localStorage.getItem('token')}`,
             },
-            body: JSON.stringify({ title, description, images }),
+            body: JSON.stringify({ title, description, images }), // Novo Campo Incluído
         });
 
         if (res.ok) {
@@ -330,6 +330,7 @@ export default function Dashboard() {
                                             <div className="p-4">
                                                 <h3 className="font-bold text-gray-900 text-lg leading-tight mb-1">{item.title}</h3>
                                                 <p className="text-sm text-gray-600 line-clamp-3">{item.description}</p>
+
                                             </div>
                                         </div>
 

@@ -10,6 +10,7 @@ export default function AuthPage() {
   const [loginIdentifier, setLoginIdentifier] = useState(''); // E-mail ou Telefone
   const [password, setPassword] = useState('');
   const [error, setError] = useState('');
+  const [businessCardLink, setBusinessCardLink] = useState('');
   const router = useRouter();
 
   // Função para aplicar máscara de telefone em tempo de execução
@@ -30,9 +31,10 @@ export default function AuthPage() {
     setError('');
 
     const endpoint = isLogin ? '/api/auth/login' : '/api/auth/register';
+
     const body = isLogin
       ? { loginIdentifier, password }
-      : { name, email, phone, password };
+      : { name, email, phone, password, businessCardLink };
 
     const res = await fetch(endpoint, {
       method: 'POST',
@@ -83,6 +85,16 @@ export default function AuthPage() {
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-1">WhatsApp / Telefone</label>
                 <input type="text" value={phone} onChange={handlePhoneChange} maxLength={15} required className="w-full p-2.5 border rounded-lg focus:ring-2 focus:ring-blue-500 text-sm focus:outline-none" placeholder="(00) 00000-0000" />
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">Link do Cartão de Visitas Virtual</label>
+                <input
+                  type="url"
+                  value={businessCardLink}
+                  onChange={e => setBusinessCardLink(e.target.value)}
+                  className="w-full p-2.5 border rounded-lg focus:ring-2 focus:ring-blue-500 text-sm focus:outline-none"
+                  placeholder="https://meucartao.com/seu-perfil"
+                />
               </div>
             </>
           )}

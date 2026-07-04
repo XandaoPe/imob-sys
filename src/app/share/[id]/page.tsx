@@ -22,6 +22,9 @@ export default function PublicSharePage() {
     const [loading, setLoading] = useState(true);
     const [activeIndexes, setActiveIndexes] = useState<{ [key: string]: number }>({});
 
+    // Estado para controlar a imagem expandida no modal em tela cheia
+    const [selectedImage, setSelectedImage] = useState<string | null>(null);
+
     useEffect(() => {
         if (!params?.id) return;
 
@@ -144,7 +147,13 @@ export default function PublicSharePage() {
                                     <div>
                                         {gallery.length > 0 ? (
                                             <div className="w-full h-56 bg-gray-100 flex items-center justify-center p-2 border-b border-gray-100 relative group">
-                                                <img src={gallery[currentIdx]} className="max-w-full max-h-full object-contain rounded-lg" alt={item.title} />
+                                                {/* Imagem agora possui cursor-pointer e onClick para abrir a visualização expandida */}
+                                                <img
+                                                    src={gallery[currentIdx]}
+                                                    className="max-w-full max-h-full object-contain rounded-lg cursor-pointer transition transform hover:scale-[1.02]"
+                                                    alt={item.title}
+                                                    onClick={() => setSelectedImage(gallery[currentIdx])}
+                                                />
 
                                                 {gallery.length > 1 && (
                                                     <>
@@ -171,6 +180,34 @@ export default function PublicSharePage() {
                     </div>
                 )}
             </main>
+
+            {/* MODAL / LIGHTBOX: Tela Inteira com desfoque de fundo */}
+            {selectedImage && (
+                <div
+                    className="fixed inset-0 bg-black/80 backdrop-blur-xs z-50 flex items-center justify-center p-4 animate-fade-in"
+                    onClick={() => setSelectedImage(null)}
+                >
+                    {/* Botão de fechar (X) fixado no canto superior direito */}
+                    <button
+                        className="absolute top-4 right-4 bg-white/10 text-white rounded-full p-2 hover:bg-white/20 transition-all"
+                        onClick={() => setSelectedImage(null)}
+                    >
+                        <svg className="w-6 h-6" fill="none" stroke="currentColor" strokeWidth="2.5" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
+                        </svg>
+                    </button>
+
+                    {/* Container da Imagem em proporção grande / tela cheia */}
+                    <div className="relative max-w-4xl max-h-[90vh] flex items-center justify-center">
+                        <img
+                            src={selectedImage}
+                            alt="Visualização expandida"
+                            className="max-w-full max-h-[85vh] object-contain rounded-lg shadow-2xl"
+                            onClick={(e) => e.stopPropagation()} // Evita fechar o modal ao clicar diretamente na imagem
+                        />
+                    </div>
+                </div>
+            )}
         </div>
     );
 }

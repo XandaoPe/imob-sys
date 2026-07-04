@@ -2,7 +2,7 @@
   "name": "Catálogo Digital",
   "short_name": "Catálogo",
   "start_url": "/",
-  "display": "standalone",
+  "display": "browser",
   "background_color": "#f9fafb",
   "theme_color": "#2563eb",
   "icons": [

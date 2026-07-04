@@ -22,10 +22,6 @@ export default function PublicSharePage() {
     const [loading, setLoading] = useState(true);
     const [activeIndexes, setActiveIndexes] = useState<{ [key: string]: number }>({});
 
-    // Estados para o prompt de instalação (salvar atalho no celular)
-    const [deferredPrompt, setDeferredPrompt] = useState<any>(null);
-    const [showInstallBtn, setShowInstallBtn] = useState(false);
-
     useEffect(() => {
         if (!params?.id) return;
 
@@ -43,24 +39,6 @@ export default function PublicSharePage() {
             .catch((err) => console.error(err))
             .finally(() => setLoading(false));
     }, [params?.id]);
-
-    // Listener para capturar o evento de criação de atalho/instalação do navegador
-    useEffect(() => {
-        const handleBeforeInstallPrompt = (e: Event) => {
-            // Impede o navegador de mostrar a barra de instalação padrão imediatamente
-            e.preventDefault();
-            // Guarda o evento para disparar quando o usuário clicar no seu botão
-            setDeferredPrompt(e);
-            // Mostra o botão customizado na interface
-            setShowInstallBtn(true);
-        };
-
-        window.addEventListener('beforeinstallprompt', handleBeforeInstallPrompt);
-
-        return () => {
-            window.removeEventListener('beforeinstallprompt', handleBeforeInstallPrompt);
-        };
-    }, []);
 
     const formatDisplayPhone = (phoneStr: string) => {
         if (!phoneStr) return '';
@@ -81,20 +59,27 @@ export default function PublicSharePage() {
         setActiveIndexes(prev => ({ ...prev, [itemId]: current - 1 < 0 ? max - 1 : current - 1 }));
     };
 
-    // Função executada ao clicar no botão de salvar atalho
-    const handleInstallShortcut = async () => {
-        if (!deferredPrompt) return;
-
-        // Dispara o prompt nativo do celular (Android/Chrome)
-        deferredPrompt.prompt();
-
-        // Aguarda a resposta do usuário
-        const { outcome } = await deferredPrompt.userChoice;
-        console.log(`Usuário escolheu: ${outcome}`);
-
-        // Limpa o evento para que não seja reutilizado
-        setDeferredPrompt(null);
-        setShowInstallBtn(false);
+    // Função que abre a janela nativa de compartilhar do celular
+    const handleSharePage = async () => {
+        if (navigator.share) {
+            try {
+                await navigator.share({
+                    title: data?.tenantName || "Catálogo",
+                    text: `Acesse a página de ${data?.tenantName}. Para salvar no seu celular, toque em "Adicionar à Tela de Início".`,
+                    url: window.location.href,
+                });
+            } catch (error) {
+                console.log('Compartilhamento cancelado', error);
+            }
+        } else {
+            // Caso o navegador seja antigo ou desktop, copia o link
+            try {
+                await navigator.clipboard.writeText(window.location.href);
+                alert("Link da página copiado! Agora você pode enviar ou salvar onde quiser.");
+            } catch (err) {
+                console.error("Erro ao copiar", err);
+            }
+        }
     };
 
     if (loading) return <div className="min-h-screen bg-gray-50 flex items-center justify-center text-gray-500">Carregando registros...</div>;
@@ -114,7 +99,6 @@ export default function PublicSharePage() {
                     </div>
                 )}
 
-                {/* NOVO POSICIONAMENTO DO BOTÃO: Renderiza uma única vez no Header se o corretor possuir o link */}
                 {data.businessCardLink && (
                     <div className="mt-4 w-full max-w-sm">
                         <a
@@ -131,21 +115,19 @@ export default function PublicSharePage() {
                     </div>
                 )}
 
-                {/* INCLUSÃO: Botão dinâmico para Salvar o Atalho na Tela Inicial do Celular */}
-                {showInstallBtn && (
-                    <div className="mt-2 w-full max-w-sm">
-                        <button
-                            type="button"
-                            onClick={handleInstallShortcut}
-                            className="w-full bg-emerald-600 text-white py-2.5 px-4 rounded-xl text-xs font-semibold flex items-center justify-center gap-1.5 hover:bg-emerald-700 shadow-sm transition-all transform hover:-translate-y-0.5"
-                        >
-                            <svg className="w-4 h-4" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
-                                <path strokeLinecap="round" strokeLinejoin="round" d="M12 18h.01M8 21h8a2 2 0 002-2V5a2 2 0 00-2-2H8a2 2 0 00-2 2v14a2 2 0 002 2z" />
-                            </svg>
-                            Adicionar esta página à tela inicial do celular
-                        </button>
-                    </div>
-                )}
+                {/* BOTÃO QUE IRÁ APARECER DE IMEDIATO */}
+                <div className="mt-2 w-full max-w-sm">
+                    <button
+                        type="button"
+                        onClick={handleSharePage}
+                        className="w-full bg-emerald-600 text-white py-2.5 px-4 rounded-xl text-xs font-semibold flex items-center justify-center gap-1.5 hover:bg-emerald-700 shadow-sm transition-all transform hover:-translate-y-0.5"
+                    >
+                        <svg className="w-4 h-4" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" d="M8.684 10.742a3 3 0 110 2.516m0-2.516a3 3 0 114.574-2.516m-4.574 2.516a3 3 0 104.574 2.516M15 8.25l.008-.008M15 15.75l.008-.008" />
+                        </svg>
+                        Salvar na Tela Inicial / Compartilhar
+                    </button>
+                </div>
 
                 <p className="text-xs text-gray-400 mt-3">Registros liberados para visualização pública</p>
             </header>

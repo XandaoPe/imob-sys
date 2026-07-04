@@ -1,6 +1,7 @@
 'use client';
 import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
+import imageCompression from 'browser-image-compression';
 
 interface Item {
     _id: string;
@@ -51,41 +52,59 @@ export default function Dashboard() {
     const handleMultipleImagesChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
         const files = e.target.files;
         if (files && files.length > 0) {
+            setIsLoading(true);
+            setProcessingMessage('Otimizando e comprimindo imagens...');
             const loadedImages: string[] = [];
-            const MAX_FILE_SIZE = 1.5 * 1024 * 1024; // 1.5 MB em bytes
 
-            for (let i = 0; i < files.length; i++) {
-                const file = files[i];
+            // Configurações recomendadas para browser-image-compression
+            const options = {
+                maxSizeMB: 0.4,          // Tamanho máximo alvo de ~400KB por arquivo
+                maxWidthOrHeight: 1280,   // Resolução máxima Full HD/Web-Friendly (ótimo para dashboards rápidos)
+                useWebWorker: true,      // Executa em background para não travar a interface do usuário
+            };
 
-                // VALIDAÇÃO DE TAMANHO DA IMAGEM
-                if (file.size > MAX_FILE_SIZE) {
-                    alert(
-                        `A imagem "${file.name}" ultrapassa o limite permitido!\n\n` +
-                        `• Tamanho máximo por foto: 1.5 MB\n` +
-                        `• Seu arquivo possui: ${(file.size / (1024 * 1024)).toFixed(2)} MB\n\n` +
-                        `Dica: Reduza a resolução da foto ou envie imagens mais leves para evitar falhas no salvamento.`
-                    );
-                    continue; // Ignora o arquivo muito grande e passa para o próximo da lista
+            try {
+                for (let i = 0; i < files.length; i++) {
+                    const file = files[i];
+
+                    // Realiza a compressão direto no cliente
+                    const compressedFile = await imageCompression(file, options);
+
+                    // Validação de segurança pós-compressão (Se ainda sim for gigante)
+                    const MAX_FILE_SIZE = 1.5 * 1024 * 1024;
+                    if (compressedFile.size > MAX_FILE_SIZE) {
+                        alert(
+                            `A imagem "${file.name}" mesmo após compressão ultrapassa o limite permitido do servidor!\n\n` +
+                            `• Seu arquivo possui: ${(compressedFile.size / (1024 * 1024)).toFixed(2)} MB\n`
+                        );
+                        continue;
+                    }
+
+                    // Converte o Blob comprimido para Base64 string
+                    const reader = new FileReader();
+                    const promise = new Promise<string>((resolve) => {
+                        reader.onloadend = () => resolve(reader.result as string);
+                    });
+                    reader.readAsDataURL(compressedFile);
+                    loadedImages.push(await promise);
                 }
 
-                const reader = new FileReader();
-                const promise = new Promise<string>((resolve) => {
-                    reader.onloadend = () => resolve(reader.result as string);
-                });
-                reader.readAsDataURL(file);
-                loadedImages.push(await promise);
+                if (loadedImages.length > 0) {
+                    setImages((prevImages) => {
+                        const updatedImages = [...prevImages, ...loadedImages];
+                        setFileCountText(`${updatedImages.length} foto(s) na galeria`);
+                        return updatedImages;
+                    });
+                }
+            } catch (error) {
+                console.error("Erro na compressão das imagens:", error);
+                alert("Ocorreu um erro ao processar e comprimir uma ou mais imagens.");
+            } finally {
+                setIsLoading(false);
+                setProcessingMessage(null);
+                // Limpa o valor do input para permitir selecionar os mesmos arquivos novamente se necessário
+                e.target.value = '';
             }
-
-            if (loadedImages.length > 0) {
-                setImages((prevImages) => {
-                    const updatedImages = [...prevImages, ...loadedImages];
-                    setFileCountText(`${updatedImages.length} foto(s) na galeria`);
-                    return updatedImages;
-                });
-            }
-
-            // Limpa o valor do input para permitir selecionar os mesmos arquivos novamente se necessário
-            e.target.value = '';
         }
     };
 
@@ -138,7 +157,7 @@ export default function Dashboard() {
             } else if (res.status === 413) {
                 alert(
                     "Erro: O tamanho total do registro (incluindo as fotos) ficou muito grande para o servidor.\n\n" +
-                    "Por favor, remova algumas imagens da galeria ou utilize fotos com menor resolução antes de tentar salvar novamente."
+                    "Por favor, remova algumas imagens da galeria ou reduza as fotos antes de tentar salvar novamente."
                 );
             } else {
                 const errData = await res.json().catch(() => ({}));
@@ -254,9 +273,9 @@ export default function Dashboard() {
                                 <p className="text-xs text-gray-700 font-semibold">{fileCountText ? fileCountText : 'Adicionar fotos'}</p>
                                 <input type="file" accept="image/*" multiple onChange={handleMultipleImagesChange} className="hidden" />
                             </label>
-                            {/* TEXTO DE INSTRUÇÃO PARA O CLIENTE */}
-                            <p className="text-[10px] text-gray-500 mt-1 leading-tight">
-                                * Máximo recomendado de 1.5 MB por imagem (fotos tiradas na hora com o celular podem precisar ser reduzidas).
+                            {/* TEXTO DE INSTRUÇÃO ATUALIZADO */}
+                            <p className="text-[10px] text-green-600 mt-1 font-medium leading-tight">
+                                * Compressão automática ativa! Fotos de alta resolução serão reduzidas sem perda de fidelidade para garantir o salvamento rápido.
                             </p>
                         </div>
 

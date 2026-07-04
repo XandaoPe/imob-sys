@@ -22,6 +22,10 @@ export default function PublicSharePage() {
     const [loading, setLoading] = useState(true);
     const [activeIndexes, setActiveIndexes] = useState<{ [key: string]: number }>({});
 
+    // Estados para o prompt de instalação (salvar atalho no celular)
+    const [deferredPrompt, setDeferredPrompt] = useState<any>(null);
+    const [showInstallBtn, setShowInstallBtn] = useState(false);
+
     useEffect(() => {
         if (!params?.id) return;
 
@@ -40,6 +44,24 @@ export default function PublicSharePage() {
             .finally(() => setLoading(false));
     }, [params?.id]);
 
+    // Listener para capturar o evento de criação de atalho/instalação do navegador
+    useEffect(() => {
+        const handleBeforeInstallPrompt = (e: Event) => {
+            // Impede o navegador de mostrar a barra de instalação padrão imediatamente
+            e.preventDefault();
+            // Guarda o evento para disparar quando o usuário clicar no seu botão
+            setDeferredPrompt(e);
+            // Mostra o botão customizado na interface
+            setShowInstallBtn(true);
+        };
+
+        window.addEventListener('beforeinstallprompt', handleBeforeInstallPrompt);
+
+        return () => {
+            window.removeEventListener('beforeinstallprompt', handleBeforeInstallPrompt);
+        };
+    }, []);
+
     const formatDisplayPhone = (phoneStr: string) => {
         if (!phoneStr) return '';
         const clean = phoneStr.replace(/\D/g, '');
@@ -57,6 +79,22 @@ export default function PublicSharePage() {
     const prevImage = (itemId: string, max: number) => {
         const current = activeIndexes[itemId] || 0;
         setActiveIndexes(prev => ({ ...prev, [itemId]: current - 1 < 0 ? max - 1 : current - 1 }));
+    };
+
+    // Função executada ao clicar no botão de salvar atalho
+    const handleInstallShortcut = async () => {
+        if (!deferredPrompt) return;
+
+        // Dispara o prompt nativo do celular (Android/Chrome)
+        deferredPrompt.prompt();
+
+        // Aguarda a resposta do usuário
+        const { outcome } = await deferredPrompt.userChoice;
+        console.log(`Usuário escolheu: ${outcome}`);
+
+        // Limpa o evento para que não seja reutilizado
+        setDeferredPrompt(null);
+        setShowInstallBtn(false);
     };
 
     if (loading) return <div className="min-h-screen bg-gray-50 flex items-center justify-center text-gray-500">Carregando registros...</div>;
@@ -90,6 +128,22 @@ export default function PublicSharePage() {
                             </svg>
                             Clique aqui para visualizar informações de contato
                         </a>
+                    </div>
+                )}
+
+                {/* INCLUSÃO: Botão dinâmico para Salvar o Atalho na Tela Inicial do Celular */}
+                {showInstallBtn && (
+                    <div className="mt-2 w-full max-w-sm">
+                        <button
+                            type="button"
+                            onClick={handleInstallShortcut}
+                            className="w-full bg-emerald-600 text-white py-2.5 px-4 rounded-xl text-xs font-semibold flex items-center justify-center gap-1.5 hover:bg-emerald-700 shadow-sm transition-all transform hover:-translate-y-0.5"
+                        >
+                            <svg className="w-4 h-4" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
+                                <path strokeLinecap="round" strokeLinejoin="round" d="M12 18h.01M8 21h8a2 2 0 002-2V5a2 2 0 00-2-2H8a2 2 0 00-2 2v14a2 2 0 002 2z" />
+                            </svg>
+                            Adicionar esta página à tela inicial do celular
+                        </button>
                     </div>
                 )}
 

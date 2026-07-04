@@ -22,8 +22,8 @@ export default function PublicSharePage() {
     const [loading, setLoading] = useState(true);
     const [activeIndexes, setActiveIndexes] = useState<{ [key: string]: number }>({});
 
-    // Estado para controlar a imagem expandida no modal em tela cheia
-    const [selectedImage, setSelectedImage] = useState<string | null>(null);
+    // Estado para controlar o item ativo e o índice da imagem no visualizador em tela cheia
+    const [activeViewer, setActiveViewer] = useState<{ item: Item; currentIdx: number } | null>(null);
 
     useEffect(() => {
         if (!params?.id) return;
@@ -60,6 +60,23 @@ export default function PublicSharePage() {
     const prevImage = (itemId: string, max: number) => {
         const current = activeIndexes[itemId] || 0;
         setActiveIndexes(prev => ({ ...prev, [itemId]: current - 1 < 0 ? max - 1 : current - 1 }));
+    };
+
+    // Funções de navegação exclusivas para o modo Tela Cheia
+    const nextViewerImage = (max: number) => {
+        if (!activeViewer) return;
+        setActiveViewer(prev => prev ? {
+            ...prev,
+            currentIdx: prev.currentIdx + 1 >= max ? 0 : prev.currentIdx + 1
+        } : null);
+    };
+
+    const prevViewerImage = (max: number) => {
+        if (!activeViewer) return;
+        setActiveViewer(prev => prev ? {
+            ...prev,
+            currentIdx: prev.currentIdx - 1 < 0 ? max - 1 : prev.currentIdx - 1
+        } : null);
     };
 
     // Função que abre a janela nativa de compartilhar do celular
@@ -147,12 +164,11 @@ export default function PublicSharePage() {
                                     <div>
                                         {gallery.length > 0 ? (
                                             <div className="w-full h-56 bg-gray-100 flex items-center justify-center p-2 border-b border-gray-100 relative group">
-                                                {/* Imagem agora possui cursor-pointer e onClick para abrir a visualização expandida */}
                                                 <img
                                                     src={gallery[currentIdx]}
                                                     className="max-w-full max-h-full object-contain rounded-lg cursor-pointer transition transform hover:scale-[1.02]"
                                                     alt={item.title}
-                                                    onClick={() => setSelectedImage(gallery[currentIdx])}
+                                                    onClick={() => setActiveViewer({ item, currentIdx })}
                                                 />
 
                                                 {gallery.length > 1 && (
@@ -181,16 +197,16 @@ export default function PublicSharePage() {
                 )}
             </main>
 
-            {/* MODAL / LIGHTBOX: Tela Inteira com desfoque de fundo */}
-            {selectedImage && (
+            {/* MODAL / LIGHTBOX: Tela Inteira com desfoque de fundo e Carrossel */}
+            {activeViewer && (
                 <div
                     className="fixed inset-0 bg-black/80 backdrop-blur-xs z-50 flex items-center justify-center p-4 animate-fade-in"
-                    onClick={() => setSelectedImage(null)}
+                    onClick={() => setActiveViewer(null)}
                 >
                     {/* Botão de fechar (X) fixado no canto superior direito */}
                     <button
                         className="absolute top-4 right-4 bg-white/10 text-white rounded-full p-2 hover:bg-white/20 transition-all"
-                        onClick={() => setSelectedImage(null)}
+                        onClick={() => setActiveViewer(null)}
                     >
                         <svg className="w-6 h-6" fill="none" stroke="currentColor" strokeWidth="2.5" viewBox="0 0 24 24">
                             <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
@@ -198,9 +214,32 @@ export default function PublicSharePage() {
                     </button>
 
                     {/* Container da Imagem em proporção grande / tela cheia */}
-                    <div className="relative max-w-4xl max-h-[90vh] flex items-center justify-center">
+                    <div className="relative w-full max-w-4xl max-h-[90vh] flex items-center justify-center">
+
+                        {/* Botões do Carrossel em Tela Cheia */}
+                        {(activeViewer.item.images?.length || 0) > 1 && (
+                            <>
+                                <button
+                                    onClick={(e) => { e.stopPropagation(); prevViewerImage(activeViewer.item.images!.length); }}
+                                    className="absolute left-4 z-50 bg-black/50 text-white w-10 h-10 rounded-full flex items-center justify-center font-bold text-lg hover:bg-black/80 transition"
+                                >
+                                    &lt;
+                                </button>
+                                <button
+                                    onClick={(e) => { e.stopPropagation(); nextViewerImage(activeViewer.item.images!.length); }}
+                                    className="absolute right-4 z-50 bg-black/50 text-white w-10 h-10 rounded-full flex items-center justify-center font-bold text-lg hover:bg-black/80 transition"
+                                >
+                                    &gt;
+                                </button>
+                                {/* Contador de imagens em tela cheia */}
+                                <div className="absolute bottom-4 left-1/2 -translate-x-1/2 bg-black/60 text-white text-xs px-3 py-1 rounded-full font-mono z-50">
+                                    {activeViewer.currentIdx + 1} / {activeViewer.item.images!.length}
+                                </div>
+                            </>
+                        )}
+
                         <img
-                            src={selectedImage}
+                            src={activeViewer.item.images![activeViewer.currentIdx]}
                             alt="Visualização expandida"
                             className="max-w-full max-h-[85vh] object-contain rounded-lg shadow-2xl"
                             onClick={(e) => e.stopPropagation()} // Evita fechar o modal ao clicar diretamente na imagem

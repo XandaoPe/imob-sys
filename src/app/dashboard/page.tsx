@@ -354,7 +354,8 @@ export default function Dashboard() {
                             </p>
                         </div>
 
-                        {!editingId && images.length > 0 && (
+                        {/* GALERIA DE ORGANIZAÇÃO – agora sempre exibida se houver imagens */}
+                        {images.length > 0 && (
                             <div className="p-1">
                                 <p className="text-[11px] font-semibold text-gray-500 mb-1.5">Organizar fotos antes de salvar:</p>
                                 <div className="grid grid-cols-3 gap-2 max-h-32 overflow-y-auto p-1.5 bg-gray-50 border rounded-lg">
@@ -437,7 +438,8 @@ export default function Dashboard() {
                         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                             {items.map(item => {
                                 const isThisItemEditing = editingId === item._id;
-                                const gallery = isThisItemEditing ? images : (item.images || []);
+                                // A galeria mostrada no card é a original do item (não a do formulário)
+                                const gallery = item.images || [];
                                 const currentImgIndex = activeImageIndexes[item._id] || 0;
 
                                 return (
@@ -481,39 +483,6 @@ export default function Dashboard() {
                                                 </div>
                                             ) : (
                                                 <div className="w-full h-44 bg-gray-100 flex items-center justify-center text-gray-400 text-xs border-b">Sem imagem</div>
-                                            )}
-
-                                            {/* Miniaturas internas na Edição */}
-                                            {isThisItemEditing && gallery.length > 0 && (
-                                                <div className="p-3 bg-amber-50/50 border-b border-amber-100">
-                                                    <p className="text-[11px] font-semibold text-amber-800 mb-1.5">Organizar Galeria:</p>
-                                                    <div className="grid grid-cols-4 gap-2 max-h-24 overflow-y-auto p-1 bg-white border border-amber-200 rounded-lg">
-                                                        {gallery.map((img, idx) => (
-                                                            <div key={idx} className="relative h-12 w-full border rounded bg-gray-50 group/thumb">
-                                                                <img src={img} className="h-full w-full object-cover rounded" alt="thumb" />
-                                                                <button
-                                                                    type="button"
-                                                                    onClick={() => removeImageFromGallery(idx)}
-                                                                    className="absolute -top-1 -right-1 bg-red-500 text-white w-4 h-4 rounded-full flex items-center justify-center text-[10px] font-bold shadow hover:bg-red-600 transition z-10"
-                                                                >
-                                                                    &times;
-                                                                </button>
-                                                                <div className="absolute inset-0 bg-black/40 items-center justify-center gap-1.5 rounded hidden group-hover/thumb:flex transition">
-                                                                    {idx > 0 && (
-                                                                        <button type="button" onClick={() => moveImageOrder(idx, 'left')} className="bg-white/90 text-gray-800 font-bold text-[10px] w-4 h-4 rounded hover:bg-white flex items-center justify-center">
-                                                                            &larr;
-                                                                        </button>
-                                                                    )}
-                                                                    {idx < gallery.length - 1 && (
-                                                                        <button type="button" onClick={() => moveImageOrder(idx, 'right')} className="bg-white/90 text-gray-800 font-bold text-[10px] w-4 h-4 rounded hover:bg-white flex items-center justify-center">
-                                                                            &rarr;
-                                                                        </button>
-                                                                    )}
-                                                                </div>
-                                                            </div>
-                                                        ))}
-                                                    </div>
-                                                </div>
                                             )}
 
                                             {/* Conteúdo Informativo (Clique abre o modal) */}

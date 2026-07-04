@@ -20,9 +20,13 @@ export default function Dashboard() {
     const [copied, setCopied] = useState(false);
     const [editingId, setEditingId] = useState<string | null>(null);
     const [isLoading, setIsLoading] = useState(false);
-    const [processingMessage, setProcessingMessage] = useState<string | null>(null); // Mensagem flutuante
+    const [processingMessage, setProcessingMessage] = useState<string | null>(null);
 
-    // Guarda o índice da imagem activa de cada card de listagem individualmente
+    // Estado para gerenciar o item aberto no Modal de Visualização Expandida
+    const [selectedVisualizingItem, setSelectedVisualizingItem] = useState<Item | null>(null);
+    const [modalImageIndex, setModalImageIndex] = useState<number>(0);
+
+    // Guarda o índice da imagem ativa de cada card de listagem individualmente
     const [activeImageIndexes, setActiveImageIndexes] = useState<{ [key: string]: number }>({});
 
     const router = useRouter();
@@ -56,21 +60,17 @@ export default function Dashboard() {
             setProcessingMessage('Otimizando e comprimindo imagens...');
             const loadedImages: string[] = [];
 
-            // Configurações recomendadas para browser-image-compression
             const options = {
-                maxSizeMB: 0.4,          // Tamanho máximo alvo de ~400KB por arquivo
-                maxWidthOrHeight: 1280,   // Resolução máxima Full HD/Web-Friendly (ótimo para dashboards rápidos)
-                useWebWorker: true,      // Executa em background para não travar a interface do usuário
+                maxSizeMB: 0.4,
+                maxWidthOrHeight: 1280,
+                useWebWorker: true,
             };
 
             try {
                 for (let i = 0; i < files.length; i++) {
                     const file = files[i];
-
-                    // Realiza a compressão direto no cliente
                     const compressedFile = await imageCompression(file, options);
 
-                    // Validação de segurança pós-compressão (Se ainda sim for gigante)
                     const MAX_FILE_SIZE = 1.5 * 1024 * 1024;
                     if (compressedFile.size > MAX_FILE_SIZE) {
                         alert(
@@ -80,7 +80,6 @@ export default function Dashboard() {
                         continue;
                     }
 
-                    // Converte o Blob comprimido para Base64 string
                     const reader = new FileReader();
                     const promise = new Promise<string>((resolve) => {
                         reader.onloadend = () => resolve(reader.result as string);
@@ -102,7 +101,6 @@ export default function Dashboard() {
             } finally {
                 setIsLoading(false);
                 setProcessingMessage(null);
-                // Limpa o valor do input para permitir selecionar os mesmos arquivos novamente se necessário
                 e.target.value = '';
             }
         }
@@ -177,8 +175,6 @@ export default function Dashboard() {
         setDescription(item.description);
         setImages(item.images || []);
         setFileCountText(item.images && item.images.length > 0 ? `${item.images.length} foto(s) carregada(s)` : '');
-
-        // Rolagem suave até o formulário para melhorar a UX
         window.scrollTo({ top: 0, behavior: 'smooth' });
     };
 
@@ -232,6 +228,21 @@ export default function Dashboard() {
         setActiveImageIndexes(prev => ({ ...prev, [itemId]: newIndex }));
     };
 
+    // Abre o Modal com a foto inicial correspondente ao Card
+    const openVisualizationModal = (item: Item) => {
+        setSelectedVisualizingItem(item);
+        setModalImageIndex(activeImageIndexes[item._id] || 0);
+    };
+
+    const changeModalImageIndex = (direction: 'prev' | 'next') => {
+        if (!selectedVisualizingItem?.images) return;
+        const max = selectedVisualizingItem.images.length;
+        let newIndex = direction === 'next' ? modalImageIndex + 1 : modalImageIndex - 1;
+        if (newIndex >= max) newIndex = 0;
+        if (newIndex < 0) newIndex = max - 1;
+        setModalImageIndex(newIndex);
+    };
+
     return (
         <div className="min-h-screen bg-gray-50 p-6 text-gray-800 relative">
 
@@ -243,6 +254,71 @@ export default function Dashboard() {
                         <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
                     </svg>
                     <span className="text-sm font-medium">{processingMessage}</span>
+                </div>
+            )}
+
+            {/* MODAL DE VISUALIZAÇÃO EM TELA CHEIA */}
+            {selectedVisualizingItem && (
+                <div
+                    className="fixed inset-0 bg-black/80 backdrop-blur-sm z-50 flex items-center justify-center p-4 transition-all"
+                    onClick={() => setSelectedVisualizingItem(null)}
+                >
+                    <div
+                        className="bg-white rounded-2xl max-w-4xl w-full max-h-[90vh] overflow-hidden shadow-2xl flex flex-col relative"
+                        onClick={(e) => e.stopPropagation()}
+                    >
+                        {/* Botão Fechar */}
+                        <button
+                            onClick={() => setSelectedVisualizingItem(null)}
+                            className="absolute top-4 right-4 bg-gray-900/80 text-white hover:bg-gray-900 w-10 h-10 rounded-full flex items-center justify-center text-xl font-bold transition z-10 shadow"
+                        >
+                            &times;
+                        </button>
+
+                        {/* Área da Imagem */}
+                        <div className="relative bg-gray-900 flex-1 min-h-[300px] md:h-[500px] flex items-center justify-center p-4 select-none">
+                            {selectedVisualizingItem.images && selectedVisualizingItem.images.length > 0 ? (
+                                <>
+                                    <img
+                                        src={selectedVisualizingItem.images[modalImageIndex]}
+                                        className="max-w-full max-h-[70vh] object-contain rounded-lg"
+                                        alt={selectedVisualizingItem.title}
+                                    />
+
+                                    {/* Setas de Navegação Interna do Modal */}
+                                    {selectedVisualizingItem.images.length > 1 && (
+                                        <>
+                                            <button
+                                                type="button"
+                                                onClick={() => changeModalImageIndex('prev')}
+                                                className="absolute left-4 top-1/2 -translate-y-1/2 bg-black/70 hover:bg-black text-white w-12 h-12 rounded-full flex items-center justify-center text-lg font-bold shadow-md transition"
+                                            >
+                                                &#10094;
+                                            </button>
+                                            <button
+                                                type="button"
+                                                onClick={() => changeModalImageIndex('next')}
+                                                className="absolute right-4 top-1/2 -translate-y-1/2 bg-black/70 hover:bg-black text-white w-12 h-12 rounded-full flex items-center justify-center text-lg font-bold shadow-md transition"
+                                            >
+                                                &#10095;
+                                            </button>
+                                            <span className="absolute bottom-4 right-4 bg-black/70 text-white text-xs px-2.5 py-1 rounded-md font-mono">
+                                                {modalImageIndex + 1} / {selectedVisualizingItem.images.length}
+                                            </span>
+                                        </>
+                                    )}
+                                </>
+                            ) : (
+                                <div className="text-gray-400 text-sm">Sem imagens cadastradas</div>
+                            )}
+                        </div>
+
+                        {/* Detalhes de Rodapé */}
+                        <div className="p-6 bg-white border-t border-gray-100 overflow-y-auto max-h-[25vh]">
+                            <h3 className="text-2xl font-bold text-gray-900 mb-2">{selectedVisualizingItem.title}</h3>
+                            <p className="text-gray-600 text-sm whitespace-pre-line leading-relaxed">{selectedVisualizingItem.description}</p>
+                        </div>
+                    </div>
                 </div>
             )}
 
@@ -273,7 +349,6 @@ export default function Dashboard() {
                                 <p className="text-xs text-gray-700 font-semibold">{fileCountText ? fileCountText : 'Adicionar fotos'}</p>
                                 <input type="file" accept="image/*" multiple onChange={handleMultipleImagesChange} className="hidden" />
                             </label>
-                            {/* TEXTO DE INSTRUÇÃO ATUALIZADO */}
                             <p className="text-[10px] text-green-600 mt-1 font-medium leading-tight">
                                 * Compressão automática ativa! Fotos de alta resolução serão reduzidas sem perda de fidelidade para garantir o salvamento rápido.
                             </p>
@@ -291,7 +366,7 @@ export default function Dashboard() {
                                                 onClick={() => removeImageFromGallery(idx)}
                                                 className="absolute -top-1 -right-1 bg-red-500 text-white w-4 h-4 rounded-full flex items-center justify-center text-[10px] font-bold shadow hover:bg-red-600 transition z-10"
                                             >
-                                                ×
+                                                &times;
                                             </button>
                                             <div className="absolute inset-0 bg-black/40 items-center justify-center gap-1 rounded hidden group-hover/formthumb:flex transition">
                                                 {idx > 0 && (
@@ -366,19 +441,25 @@ export default function Dashboard() {
                                 const currentImgIndex = activeImageIndexes[item._id] || 0;
 
                                 return (
-                                    <div key={item._id} className={`border rounded-xl overflow-hidden flex flex-col justify-between bg-white shadow-sm transition ${isThisItemEditing ? 'border-amber-400 ring-2 ring-amber-100' : 'border-gray-200 hover:shadow'}`}>
+                                    <div
+                                        key={item._id}
+                                        className={`border rounded-xl overflow-hidden flex flex-col justify-between bg-white shadow-sm transition group/card ${isThisItemEditing ? 'border-amber-400 ring-2 ring-amber-100' : 'border-gray-200 hover:shadow-md'}`}
+                                    >
                                         <div>
-                                            {/* Container da Imagem Principal */}
+                                            {/* Container da Imagem Principal (Clique abre o modal) */}
                                             {gallery.length > 0 ? (
-                                                <div className="w-full h-44 bg-gray-50 flex items-center justify-center p-2 border-b border-gray-100 relative group">
-                                                    <img src={gallery[currentImgIndex] || '/placeholder.png'} className="max-w-full max-h-full object-contain rounded-lg" alt={item.title} />
+                                                <div
+                                                    onClick={() => openVisualizationModal(item)}
+                                                    className="w-full h-44 bg-gray-50 flex items-center justify-center p-2 border-b border-gray-100 relative group cursor-zoom-in"
+                                                >
+                                                    <img src={gallery[currentImgIndex] || '/placeholder.png'} className="max-w-full max-h-full object-contain rounded-lg transition-transform duration-200 group-hover:scale-[1.02]" alt={item.title} />
 
-                                                    {/* SETAS ATUALIZADAS */}
+                                                    {/* Setas de Troca Rápida de Fotos no Card */}
                                                     {gallery.length > 1 && !isThisItemEditing && (
                                                         <>
                                                             <button
                                                                 type="button"
-                                                                onClick={() => changeCardImageIndex(item._id, 'prev', gallery.length)}
+                                                                onClick={(e) => { e.stopPropagation(); changeCardImageIndex(item._id, 'prev', gallery.length); }}
                                                                 className="absolute left-2 top-1/2 -translate-y-1/2 bg-black/60 text-white w-8 h-8 rounded-full flex items-center justify-center text-sm font-bold shadow-md md:opacity-0 md:group-hover:opacity-100 transition duration-200 hover:bg-black/90 hover:scale-105"
                                                                 style={{ textShadow: '0 1px 2px rgba(0,0,0,0.6)' }}
                                                             >
@@ -386,7 +467,7 @@ export default function Dashboard() {
                                                             </button>
                                                             <button
                                                                 type="button"
-                                                                onClick={() => changeCardImageIndex(item._id, 'next', gallery.length)}
+                                                                onClick={(e) => { e.stopPropagation(); changeCardImageIndex(item._id, 'next', gallery.length); }}
                                                                 className="absolute right-2 top-1/2 -translate-y-1/2 bg-black/60 text-white w-8 h-8 rounded-full flex items-center justify-center text-sm font-bold shadow-md md:opacity-0 md:group-hover:opacity-100 transition duration-200 hover:bg-black/90 hover:scale-105"
                                                                 style={{ textShadow: '0 1px 2px rgba(0,0,0,0.6)' }}
                                                             >
@@ -402,7 +483,7 @@ export default function Dashboard() {
                                                 <div className="w-full h-44 bg-gray-100 flex items-center justify-center text-gray-400 text-xs border-b">Sem imagem</div>
                                             )}
 
-                                            {/* Miniaturas com Ordenador e Botão Excluir */}
+                                            {/* Miniaturas internas na Edição */}
                                             {isThisItemEditing && gallery.length > 0 && (
                                                 <div className="p-3 bg-amber-50/50 border-b border-amber-100">
                                                     <p className="text-[11px] font-semibold text-amber-800 mb-1.5">Organizar Galeria:</p>
@@ -410,15 +491,13 @@ export default function Dashboard() {
                                                         {gallery.map((img, idx) => (
                                                             <div key={idx} className="relative h-12 w-full border rounded bg-gray-50 group/thumb">
                                                                 <img src={img} className="h-full w-full object-cover rounded" alt="thumb" />
-
                                                                 <button
                                                                     type="button"
                                                                     onClick={() => removeImageFromGallery(idx)}
                                                                     className="absolute -top-1 -right-1 bg-red-500 text-white w-4 h-4 rounded-full flex items-center justify-center text-[10px] font-bold shadow hover:bg-red-600 transition z-10"
                                                                 >
-                                                                    ×
+                                                                    &times;
                                                                 </button>
-
                                                                 <div className="absolute inset-0 bg-black/40 items-center justify-center gap-1.5 rounded hidden group-hover/thumb:flex transition">
                                                                     {idx > 0 && (
                                                                         <button type="button" onClick={() => moveImageOrder(idx, 'left')} className="bg-white/90 text-gray-800 font-bold text-[10px] w-4 h-4 rounded hover:bg-white flex items-center justify-center">
@@ -437,8 +516,14 @@ export default function Dashboard() {
                                                 </div>
                                             )}
 
-                                            <div className="p-4">
-                                                <h3 className="font-bold text-gray-900 text-lg leading-tight mb-1">{item.title}</h3>
+                                            {/* Conteúdo Informativo (Clique abre o modal) */}
+                                            <div
+                                                onClick={() => openVisualizationModal(item)}
+                                                className="p-4 cursor-zoom-in group-hover/card:bg-gray-50/50 transition-colors"
+                                            >
+                                                <h3 className="font-bold text-gray-900 text-lg leading-tight mb-1 group-hover/card:text-blue-600 transition-colors flex items-center gap-1.5">
+                                                    {item.title}
+                                                </h3>
                                                 <p className="text-sm text-gray-600 line-clamp-3">{item.description}</p>
                                             </div>
                                         </div>

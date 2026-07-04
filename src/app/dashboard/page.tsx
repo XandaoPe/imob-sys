@@ -52,9 +52,22 @@ export default function Dashboard() {
         const files = e.target.files;
         if (files && files.length > 0) {
             const loadedImages: string[] = [];
+            const MAX_FILE_SIZE = 1.5 * 1024 * 1024; // 1.5 MB em bytes
 
             for (let i = 0; i < files.length; i++) {
                 const file = files[i];
+
+                // VALIDAÇÃO DE TAMANHO DA IMAGEM
+                if (file.size > MAX_FILE_SIZE) {
+                    alert(
+                        `A imagem "${file.name}" ultrapassa o limite permitido!\n\n` +
+                        `• Tamanho máximo por foto: 1.5 MB\n` +
+                        `• Seu arquivo possui: ${(file.size / (1024 * 1024)).toFixed(2)} MB\n\n` +
+                        `Dica: Reduza a resolução da foto ou envie imagens mais leves para evitar falhas no salvamento.`
+                    );
+                    continue; // Ignora o arquivo muito grande e passa para o próximo da lista
+                }
+
                 const reader = new FileReader();
                 const promise = new Promise<string>((resolve) => {
                     reader.onloadend = () => resolve(reader.result as string);
@@ -63,11 +76,16 @@ export default function Dashboard() {
                 loadedImages.push(await promise);
             }
 
-            setImages((prevImages) => {
-                const updatedImages = [...prevImages, ...loadedImages];
-                setFileCountText(`${updatedImages.length} foto(s) na galeria`);
-                return updatedImages;
-            });
+            if (loadedImages.length > 0) {
+                setImages((prevImages) => {
+                    const updatedImages = [...prevImages, ...loadedImages];
+                    setFileCountText(`${updatedImages.length} foto(s) na galeria`);
+                    return updatedImages;
+                });
+            }
+
+            // Limpa o valor do input para permitir selecionar os mesmos arquivos novamente se necessário
+            e.target.value = '';
         }
     };
 
@@ -117,6 +135,14 @@ export default function Dashboard() {
             if (res.ok) {
                 resetForm();
                 await fetchItems();
+            } else if (res.status === 413) {
+                alert(
+                    "Erro: O tamanho total do registro (incluindo as fotos) ficou muito grande para o servidor.\n\n" +
+                    "Por favor, remova algumas imagens da galeria ou utilize fotos com menor resolução antes de tentar salvar novamente."
+                );
+            } else {
+                const errData = await res.json().catch(() => ({}));
+                alert(errData.message || "Ocorreu um erro ao tentar salvar o registro.");
             }
         } catch (error) {
             console.error("Erro ao salvar registro:", error);
@@ -228,6 +254,10 @@ export default function Dashboard() {
                                 <p className="text-xs text-gray-700 font-semibold">{fileCountText ? fileCountText : 'Adicionar fotos'}</p>
                                 <input type="file" accept="image/*" multiple onChange={handleMultipleImagesChange} className="hidden" />
                             </label>
+                            {/* TEXTO DE INSTRUÇÃO PARA O CLIENTE */}
+                            <p className="text-[10px] text-gray-500 mt-1 leading-tight">
+                                * Máximo recomendado de 1.5 MB por imagem (fotos tiradas na hora com o celular podem precisar ser reduzidas).
+                            </p>
                         </div>
 
                         {!editingId && images.length > 0 && (
@@ -279,7 +309,7 @@ export default function Dashboard() {
                 <div className="bg-white p-6 rounded-xl shadow-sm border border-gray-200 md:col-span-2">
                     <div className="mb-6 p-4 bg-blue-50 border border-blue-200 rounded-xl">
                         <p className="font-semibold text-blue-900 text-sm mb-1.5 flex items-center gap-1.5">
-                            <svg className="w-4 h-4" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" d="M13.828 10.172a4 4 0 00-5.656 0l-4 4a4 4 0 105.656 5.656l1.102-1.101m-.758-4.899a4 4 0 005.656 0l4-4a4 4 0 00-5.656-5.656l-1.1 1.1"></path></svg>
+                            <svg className="w-4 h-4" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" d="M13.828 10.172a4 4 0 00-5.656 0l-4 4a4 4 0 105.656 5.656l1.102-1.101m-.758-4.899a4 4 0 00-5.656 0l4-4a4 4 0 00-5.656-5.656l-1.1 1.1"></path></svg>
                             Link de Compartilhamento Público:
                         </p>
 

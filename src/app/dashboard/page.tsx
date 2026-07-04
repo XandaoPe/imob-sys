@@ -18,6 +18,8 @@ export default function Dashboard() {
     const [shareLink, setShareLink] = useState('');
     const [copied, setCopied] = useState(false);
     const [editingId, setEditingId] = useState<string | null>(null);
+    const [isLoading, setIsLoading] = useState(false);
+    const [processingMessage, setProcessingMessage] = useState<string | null>(null); // Mensagem flutuante
 
     // Guarda o índice da imagem activa de cada card de listagem individualmente
     const [activeImageIndexes, setActiveImageIndexes] = useState<{ [key: string]: number }>({});
@@ -93,22 +95,34 @@ export default function Dashboard() {
 
     const handleSaveOrUpdate = async (e: React.FormEvent) => {
         e.preventDefault();
+        if (isLoading) return;
+
+        setIsLoading(true);
         const isEditing = editingId !== null;
+        setProcessingMessage(isEditing ? 'Atualizando registro, por favor aguarde...' : 'Salvando registro, por favor aguarde...');
+
         const endpoint = isEditing ? `/api/items/${editingId}` : '/api/items';
         const method = isEditing ? 'PUT' : 'POST';
 
-        const res = await fetch(endpoint, {
-            method: method,
-            headers: {
-                'Content-Type': 'application/json',
-                Authorization: `Bearer ${localStorage.getItem('token')}`,
-            },
-            body: JSON.stringify({ title, description, images }), // Novo Campo Incluído
-        });
+        try {
+            const res = await fetch(endpoint, {
+                method: method,
+                headers: {
+                    'Content-Type': 'application/json',
+                    Authorization: `Bearer ${localStorage.getItem('token')}`,
+                },
+                body: JSON.stringify({ title, description, images }),
+            });
 
-        if (res.ok) {
-            resetForm();
-            fetchItems();
+            if (res.ok) {
+                resetForm();
+                await fetchItems();
+            }
+        } catch (error) {
+            console.error("Erro ao salvar registro:", error);
+        } finally {
+            setIsLoading(false);
+            setProcessingMessage(null);
         }
     };
 
@@ -118,6 +132,9 @@ export default function Dashboard() {
         setDescription(item.description);
         setImages(item.images || []);
         setFileCountText(item.images && item.images.length > 0 ? `${item.images.length} foto(s) carregada(s)` : '');
+
+        // Rolagem suave até o formulário para melhorar a UX
+        window.scrollTo({ top: 0, behavior: 'smooth' });
     };
 
     const resetForm = () => {
@@ -130,13 +147,25 @@ export default function Dashboard() {
 
     const handleDelete = async (id: string) => {
         if (!confirm('Deseja realmente excluir este registro?')) return;
-        const res = await fetch(`/api/items/${id}`, {
-            method: 'DELETE',
-            headers: { Authorization: `Bearer ${localStorage.getItem('token')}` },
-        });
-        if (res.ok) {
-            if (editingId === id) resetForm();
-            fetchItems();
+        if (isLoading) return;
+
+        setIsLoading(true);
+        setProcessingMessage('Excluindo registro, por favor aguarde...');
+
+        try {
+            const res = await fetch(`/api/items/${id}`, {
+                method: 'DELETE',
+                headers: { Authorization: `Bearer ${localStorage.getItem('token')}` },
+            });
+            if (res.ok) {
+                if (editingId === id) resetForm();
+                await fetchItems();
+            }
+        } catch (error) {
+            console.error("Erro ao excluir registro:", error);
+        } finally {
+            setIsLoading(false);
+            setProcessingMessage(null);
         }
     };
 
@@ -159,7 +188,19 @@ export default function Dashboard() {
     };
 
     return (
-        <div className="min-h-screen bg-gray-50 p-6 text-gray-800">
+        <div className="min-h-screen bg-gray-50 p-6 text-gray-800 relative">
+
+            {/* MENSAGEM FLUTUANTE (TOAST) */}
+            {processingMessage && (
+                <div className="fixed bottom-5 right-5 z-50 bg-gray-900 text-white px-5 py-3 rounded-xl shadow-2xl flex items-center gap-3 border border-gray-700 animate-bounce">
+                    <svg className="animate-spin h-5 w-5 text-blue-400" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                        <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                        <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                    </svg>
+                    <span className="text-sm font-medium">{processingMessage}</span>
+                </div>
+            )}
+
             <header className="max-w-5xl mx-auto flex justify-between items-center mb-8">
                 <h1 className="text-3xl font-bold tracking-tight text-gray-900">Painel de Controle</h1>
                 <button onClick={() => { localStorage.clear(); router.push('/'); }} className="bg-red-500 text-white px-4 py-2 rounded-lg font-medium hover:bg-red-600 transition">Sair</button>
@@ -222,10 +263,14 @@ export default function Dashboard() {
                         )}
 
                         <div className="flex flex-col gap-2 pt-1">
-                            <button type="submit" className={`w-full text-white p-2.5 rounded-lg font-medium transition shadow-sm ${editingId ? 'bg-amber-500 hover:bg-amber-600' : 'bg-blue-600 hover:bg-blue-700'}`}>
-                                {editingId ? 'Salvar Alterações' : 'Salvar Registro'}
+                            <button
+                                type="submit"
+                                disabled={isLoading}
+                                className={`w-full text-white p-2.5 rounded-lg font-medium transition shadow-sm ${isLoading ? 'bg-gray-400 cursor-not-allowed' : editingId ? 'bg-amber-500 hover:bg-amber-600' : 'bg-blue-600 hover:bg-blue-700'}`}
+                            >
+                                {isLoading ? 'Processando...' : editingId ? 'Salvar Alterações' : 'Salvar Registro'}
                             </button>
-                            {editingId && <button type="button" onClick={resetForm} className="w-full bg-gray-100 text-gray-600 p-2.5 rounded-lg font-medium hover:bg-gray-200 transition">Cancelar Edição</button>}
+                            {editingId && <button type="button" disabled={isLoading} onClick={resetForm} className="w-full bg-gray-100 text-gray-600 p-2.5 rounded-lg font-medium hover:bg-gray-200 transition disabled:opacity-50">Cancelar Edição</button>}
                         </div>
                     </form>
                 </div>
@@ -238,7 +283,6 @@ export default function Dashboard() {
                             Link de Compartilhamento Público:
                         </p>
 
-                        {/* CONTENEDOR RESPONSIVO AJUSTADO */}
                         <div className="flex flex-col sm:flex-row gap-2">
                             <input type="text" readOnly value={shareLink} className="w-full sm:flex-1 p-2.5 bg-white border border-gray-300 rounded-lg text-xs select-all text-blue-600 font-mono focus:outline-none" />
 
@@ -247,7 +291,6 @@ export default function Dashboard() {
                                     {copied ? 'Copiado!' : 'Copiar'}
                                 </button>
 
-                                {/* BOTÃO: ABRIR LINK AJUSTADO */}
                                 <a
                                     href={shareLink}
                                     target="_blank"
@@ -313,7 +356,7 @@ export default function Dashboard() {
                                             {/* Miniaturas com Ordenador e Botão Excluir */}
                                             {isThisItemEditing && gallery.length > 0 && (
                                                 <div className="p-3 bg-amber-50/50 border-b border-amber-100">
-                                                    <p className="text-[11px] font-semibold text-amber-800 mb-1.5">Organizar Galeria (Use as setas para ordenar ou × para remover):</p>
+                                                    <p className="text-[11px] font-semibold text-amber-800 mb-1.5">Organizar Galeria:</p>
                                                     <div className="grid grid-cols-4 gap-2 max-h-24 overflow-y-auto p-1 bg-white border border-amber-200 rounded-lg">
                                                         {gallery.map((img, idx) => (
                                                             <div key={idx} className="relative h-12 w-full border rounded bg-gray-50 group/thumb">
@@ -352,10 +395,22 @@ export default function Dashboard() {
                                         </div>
 
                                         <div className="p-4 pt-0 grid grid-cols-2 gap-2">
-                                            <button type="button" onClick={() => startEdit(item)} className={`py-2 rounded-lg text-sm font-medium transition border ${isThisItemEditing ? 'bg-amber-500 text-white border-amber-500' : 'bg-amber-50 text-amber-700 hover:bg-amber-100 border-amber-200'}`}>
+                                            <button
+                                                type="button"
+                                                disabled={isLoading}
+                                                onClick={() => startEdit(item)}
+                                                className={`py-2 rounded-lg text-sm font-medium transition border ${isThisItemEditing ? 'bg-amber-500 text-white border-amber-500' : 'bg-amber-50 text-amber-700 hover:bg-amber-100 border-amber-200'} disabled:opacity-50 disabled:cursor-not-allowed`}
+                                            >
                                                 {isThisItemEditing ? 'Editando...' : 'Editar'}
                                             </button>
-                                            <button type="button" onClick={() => handleDelete(item._id)} className="bg-red-50 text-red-600 py-2 rounded-lg hover:bg-red-100 text-sm font-medium transition border border-red-200">Excluir</button>
+                                            <button
+                                                type="button"
+                                                disabled={isLoading}
+                                                onClick={() => handleDelete(item._id)}
+                                                className="bg-red-50 text-red-600 py-2 rounded-lg hover:bg-red-100 text-sm font-medium transition border border-red-200 disabled:opacity-50 disabled:cursor-not-allowed"
+                                            >
+                                                Excluir
+                                            </button>
                                         </div>
                                     </div>
                                 );

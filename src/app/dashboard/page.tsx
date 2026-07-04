@@ -239,9 +239,23 @@ export default function Dashboard() {
                         </p>
                         <div className="flex gap-2">
                             <input type="text" readOnly value={shareLink} className="flex-1 p-2.5 bg-white border border-gray-300 rounded-lg text-xs select-all text-blue-600 font-mono focus:outline-none" />
+
                             <button type="button" onClick={copyToClipboard} className={`px-4 rounded-lg font-medium text-xs transition border flex items-center justify-center gap-1 min-w-[90px] ${copied ? 'bg-green-50 text-green-700 border-green-200' : 'bg-white text-gray-700 border-gray-300 hover:bg-gray-50'}`}>
                                 {copied ? 'Copiado!' : 'Copiar'}
                             </button>
+
+                            {/* NOVO BOTÃO: ABRIR LINK */}
+                            <a
+                                href={shareLink}
+                                target="_blank"
+                                rel="noopener noreferrer"
+                                className="px-4 bg-blue-600 text-white rounded-lg font-medium text-xs transition border border-blue-600 hover:bg-blue-700 flex items-center justify-center gap-1"
+                            >
+                                <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
+                                    <path strokeLinecap="round" strokeLinejoin="round" d="M10 6H5a2 2 0 00-2 2v9a2 2 0 002 2h14a2 2 0 002-2v-5M16.5 3.5l3.5 3.5m0 0l-3.5 3.5m3.5-3.5H11" />
+                                </svg>
+                                Abrir Link
+                            </a>
                         </div>
                     </div>
 
@@ -263,7 +277,7 @@ export default function Dashboard() {
                                                 <div className="w-full h-44 bg-gray-50 flex items-center justify-center p-2 border-b border-gray-100 relative group">
                                                     <img src={gallery[currentImgIndex] || '/placeholder.png'} className="max-w-full max-h-full object-contain rounded-lg" alt={item.title} />
 
-                                                    {/* SETAS ATUALIZADAS: Visíveis em mobile e com fundo com sombra protetora no PC */}
+                                                    {/* SETAS ATUALIZADAS */}
                                                     {gallery.length > 1 && !isThisItemEditing && (
                                                         <>
                                                             <button
@@ -330,7 +344,6 @@ export default function Dashboard() {
                                             <div className="p-4">
                                                 <h3 className="font-bold text-gray-900 text-lg leading-tight mb-1">{item.title}</h3>
                                                 <p className="text-sm text-gray-600 line-clamp-3">{item.description}</p>
-
                                             </div>
                                         </div>
 

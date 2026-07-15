@@ -330,7 +330,10 @@ export default function Dashboard() {
             <main className="max-w-5xl mx-auto grid grid-cols-1 md:grid-cols-3 gap-8">
                 {/* Formulário Lateral Esquerdo */}
                 <div className="bg-white p-6 rounded-xl shadow-sm border border-gray-200 md:col-span-1 h-fit">
-                    <h2 className="text-xl font-semibold mb-4 text-gray-900">{editingId ? 'Editar Registro' : 'Novo Registro'}</h2>
+                    <h2 className="text-xl font-semibold text-gray-900">{editingId ? 'Editar Registro' : 'Novo Registro'}</h2>
+                    <p className="text-[10px] text-green-600 mt-1 mb-2 font-medium leading-tight">
+                        * Limitado a 10 registros com 04 imagens cada.
+                    </p>
                     <form onSubmit={handleSaveOrUpdate} className="space-y-4">
                         <div>
                             <label className="block text-sm font-medium text-gray-700 mb-1">Título</label>

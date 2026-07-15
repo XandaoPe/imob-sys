@@ -1,6 +1,8 @@
 'use client';
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
+// cspell:disable-next-line
+import estadosCidades from 'estados-cidades';
 
 export default function AuthPage() {
   const [isLogin, setIsLogin] = useState(true);
@@ -11,7 +13,36 @@ export default function AuthPage() {
   const [password, setPassword] = useState('');
   const [error, setError] = useState('');
   const [businessCardLink, setBusinessCardLink] = useState('');
+
+  // Estados para o novo autocomplete de Cidade
+  const [city, setCity] = useState('');
+  const [allCities, setAllCities] = useState<string[]>([]);
+
   const router = useRouter();
+
+  // Carrega a lista de cidades do Brasil formatada ao montar a tela
+  useEffect(() => {
+    try {
+      // 1. Obtém a lista de todas as siglas de estados (UFs) do Brasil: ["SP", "RJ", ...]
+      const ufs = estadosCidades.states();
+
+      // 2. Para cada estado, busca suas respectivas cidades e formata como "Nome da Cidade (UF)"
+      const listaFormatada: string[] = [];
+      ufs.forEach((uf: string) => {
+        const cidadesDoEstado = estadosCidades.cities(uf);
+        cidadesDoEstado.forEach((nomeCidade: string) => {
+          listaFormatada.push(`${nomeCidade} (${uf})`);
+        });
+      });
+
+      // 3. Ordena a lista em ordem alfabética para facilitar a navegação do usuário
+      listaFormatada.sort((a, b) => a.localeCompare(b));
+
+      setAllCities(listaFormatada);
+    } catch (err) {
+      console.error("Erro ao carregar a lista de cidades:", err);
+    }
+  }, []);
 
   // Função para aplicar máscara de telefone em tempo de execução
   const formatPhone = (value: string) => {
@@ -32,9 +63,10 @@ export default function AuthPage() {
 
     const endpoint = isLogin ? '/api/auth/login' : '/api/auth/register';
 
+    // Se for registro, enviamos também o campo "city"
     const body = isLogin
       ? { loginIdentifier, password }
-      : { name, email, phone, password, businessCardLink };
+      : { name, email, phone, password, city, businessCardLink };
 
     const res = await fetch(endpoint, {
       method: 'POST',
@@ -55,6 +87,8 @@ export default function AuthPage() {
         setEmail('');
         setPhone('');
         setPassword('');
+        setCity('');
+        setBusinessCardLink('');
         alert('Cadastro realizado! Faça login agora.');
       }
     } else {
@@ -78,14 +112,36 @@ export default function AuthPage() {
                 <label className="block text-sm font-medium text-gray-700 mb-1">Nome Completo</label>
                 <input type="text" value={name} onChange={e => setName(e.target.value)} required className="w-full p-2.5 border rounded-lg focus:ring-2 focus:ring-blue-500 text-sm focus:outline-none" placeholder="Seu nome" />
               </div>
+
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-1">E-mail</label>
                 <input type="email" value={email} onChange={e => setEmail(e.target.value)} required className="w-full p-2.5 border rounded-lg focus:ring-2 focus:ring-blue-500 text-sm focus:outline-none" placeholder="seu@email.com" />
               </div>
+
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-1">WhatsApp / Telefone</label>
                 <input type="text" value={phone} onChange={handlePhoneChange} maxLength={15} required className="w-full p-2.5 border rounded-lg focus:ring-2 focus:ring-blue-500 text-sm focus:outline-none" placeholder="(00) 00000-0000" />
               </div>
+
+              {/* Campo de Autocomplete de Cidades */}
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">Cidade / UF</label>
+                <input
+                  type="text"
+                  list="cities-datalist"
+                  value={city}
+                  onChange={e => setCity(e.target.value)}
+                  required
+                  className="w-full p-2.5 border rounded-lg focus:ring-2 focus:ring-blue-500 text-sm focus:outline-none"
+                  placeholder="Digite para buscar sua cidade..."
+                />
+                <datalist id="cities-datalist">
+                  {allCities.map((cidadeCompleta, index) => (
+                    <option key={index} value={cidadeCompleta} />
+                  ))}
+                </datalist>
+              </div>
+
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-1">Link do Cartão de Visitas Virtual</label>
                 <input

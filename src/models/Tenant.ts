@@ -10,7 +10,12 @@ const TenantSchema = new mongoose.Schema({
     email: { type: String, required: true, unique: true },
     phone: { type: String, required: true, unique: true },
     passwordHash: { type: String, required: true },
-    businessCardLink: { type: String, default: '' }, // Novo campo global do Corretor
-}, { timestamps: true });
+    city: { type: String, required: true, default: '' }, // Adicionado para salvar a cidade de atuação
+    businessCardLink: { type: String, default: '' }, // Campo global do Corretor
+}, {
+    timestamps: true,
+    collection: 'tenants' // 1. Garante explicitamente que apontará para a coleção 'tenants' do MongoDB Atlas
+});
 
-export default mongoose.model('Tenant', TenantSchema);
+// 2. Passa 'tenants' como o terceiro parâmetro para blindar o mapeamento da coleção
+export default mongoose.models.Tenant || mongoose.model('Tenant', TenantSchema, 'tenants');

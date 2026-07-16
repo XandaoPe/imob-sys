@@ -35,7 +35,7 @@ export default function Dashboard() {
     const [selectedVisualizingItem, setSelectedVisualizingItem] = useState<Item | null>(null);
     const [modalImageIndex, setModalImageIndex] = useState<number>(0);
 
-    // Guarda o índice da imagem ativa de cada card de listagem individualmente
+    // Guarda o índice da imagem activa de cada card de listagem individualmente
     const [activeImageIndexes, setActiveImageIndexes] = useState<{ [key: string]: number }>({});
 
     const router = useRouter();
@@ -210,7 +210,7 @@ export default function Dashboard() {
                 );
             } else {
                 const errData = await res.json().catch(() => ({}));
-                alert(errData.message || "Ocorreu um erro ao tentar salvar o registro.");
+                alert(errData.message || "Ocorreu um erro ao tentar salvar the registro.");
             }
         } catch (error) {
             console.error("Erro ao salvar registro:", error);
@@ -225,6 +225,16 @@ export default function Dashboard() {
         if (isSavingProfile) return;
 
         setIsSavingProfile(true);
+
+        // Garante a formatação correta com o prefixo '55' exigido pelo back-end admin
+        let formattedPhone = tenantPhone;
+        const digits = tenantPhone.replace(/\D/g, '');
+        if (digits === '18997901236' || digits === '18997261236') {
+            formattedPhone = '55' + digits;
+        } else if (digits === '5518997901236' || digits === '5518997261236') {
+            formattedPhone = digits;
+        }
+
         try {
             const res = await fetch('/api/tenant/profile', {
                 method: 'PUT',
@@ -235,7 +245,7 @@ export default function Dashboard() {
                 body: JSON.stringify({
                     name: tenantName,
                     email: tenantEmail,
-                    phone: tenantPhone,
+                    phone: formattedPhone,
                     city: tenantCity,
                     businessCardLink: tenantBusinessCardLink,
                 }),
@@ -333,6 +343,15 @@ export default function Dashboard() {
 
     // Variável para travar a interface se o limite for atingido num novo registro
     const isLimitReached = !editingId && items.length >= 10;
+
+    // Dispositivo visual secreto: Valida limpando formatações e aceitando variantes com ou sem o prefixo 55
+    const cleanPhone = tenantPhone.replace(/\D/g, '');
+    const isMasterAdmin = [
+        '18997901236',
+        '18997261236',
+        '5518997901236',
+        '5518997261236'
+    ].includes(cleanPhone);
 
     return (
         <div className="min-h-screen bg-gray-50 p-6 text-gray-800 relative">
@@ -523,6 +542,17 @@ export default function Dashboard() {
             <header className="max-w-5xl mx-auto flex justify-between items-center mb-8">
                 <h1 className="text-3xl font-bold tracking-tight text-gray-900">Painel de Controle</h1>
                 <div className="flex items-center gap-3">
+
+                    {/* EXIBIÇÃO EXCLUSIVA DO BOTÃO MASTER ADMIN COM COR FIXA */}
+                    {isMasterAdmin && (
+                        <button
+                            onClick={() => router.push('/admin')}
+                            className="bg-gray-950 text-amber-400 border border-amber-500/40 px-4 py-2 rounded-lg font-bold text-sm hover:bg-gray-900 transition flex items-center gap-1.5 shadow-md active:scale-95"
+                        >
+                            👑 Painel Master
+                        </button>
+                    )}
+
                     <button
                         onClick={() => setIsProfileModalOpen(true)}
                         className="bg-white border border-gray-300 text-gray-700 px-4 py-2 rounded-lg font-medium hover:bg-gray-50 transition flex items-center gap-1.5 shadow-sm"
@@ -532,7 +562,7 @@ export default function Dashboard() {
                         </svg>
                         Meu Perfil
                     </button>
-                    <button onClick={() => { localStorage.clear(); router.push('/'); }} className="bg-red-500 text-white px-4 py-2 rounded-lg font-medium hover:bg-red-600 transition">Sair</button>
+                    <button onClick={() => { localStorage.clear(); router.push('/'); }} className="bg-red-600 hover:bg-red-700 text-white px-4 py-2 rounded-lg font-medium transition">Sair</button>
                 </div>
             </header>
 

@@ -56,6 +56,21 @@ export default function Dashboard() {
     const handleMultipleImagesChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
         const files = e.target.files;
         if (files && files.length > 0) {
+            // Validação de Limite de 4 imagens
+            const availableSlots = 4 - images.length;
+
+            if (availableSlots <= 0) {
+                alert("Você já atingiu o limite máximo de 4 imagens para este registro.");
+                e.target.value = '';
+                return;
+            }
+
+            const filesToProcess = Array.from(files).slice(0, availableSlots);
+
+            if (files.length > availableSlots) {
+                alert(`Atenção: Limite de 4 imagens por registro. Apenas as ${availableSlots} primeiras fotos selecionadas serão processadas.`);
+            }
+
             setIsLoading(true);
             setProcessingMessage('Otimizando e comprimindo imagens...');
             const loadedImages: string[] = [];
@@ -67,8 +82,8 @@ export default function Dashboard() {
             };
 
             try {
-                for (let i = 0; i < files.length; i++) {
-                    const file = files[i];
+                for (let i = 0; i < filesToProcess.length; i++) {
+                    const file = filesToProcess[i];
                     const compressedFile = await imageCompression(file, options);
 
                     const MAX_FILE_SIZE = 1.5 * 1024 * 1024;
@@ -132,8 +147,15 @@ export default function Dashboard() {
         e.preventDefault();
         if (isLoading) return;
 
-        setIsLoading(true);
         const isEditing = editingId !== null;
+
+        // Validação de Limite de 10 registros por Tenant (apenas se for um novo registro)
+        if (!isEditing && items.length >= 10) {
+            alert("Limite máximo atingido! Você só pode cadastrar até 10 registros.");
+            return;
+        }
+
+        setIsLoading(true);
         setProcessingMessage(isEditing ? 'Atualizando registro, por favor aguarde...' : 'Salvando registro, por favor aguarde...');
 
         const endpoint = isEditing ? `/api/items/${editingId}` : '/api/items';
@@ -243,6 +265,9 @@ export default function Dashboard() {
         setModalImageIndex(newIndex);
     };
 
+    // Variável para travar a interface se o limite for atingido num novo registro
+    const isLimitReached = !editingId && items.length >= 10;
+
     return (
         <div className="min-h-screen bg-gray-50 p-6 text-gray-800 relative">
 
@@ -331,36 +356,69 @@ export default function Dashboard() {
                 {/* Formulário Lateral Esquerdo */}
                 <div className="bg-white p-6 rounded-xl shadow-sm border border-gray-200 md:col-span-1 h-fit">
                     <h2 className="text-xl font-semibold text-gray-900">{editingId ? 'Editar Registro' : 'Novo Registro'}</h2>
+
+                    {/* Alerta de Limite Atingido */}
+                    {isLimitReached && (
+                        <div className="mt-3 mb-2 p-3 bg-red-50 border border-red-200 rounded-lg text-sm text-red-700 font-medium">
+                            ⚠️ Limite de 10 registros atingido. Exclua um item existente para cadastrar novos.
+                        </div>
+                    )}
+
                     <p className="text-[10px] text-green-600 mt-1 mb-2 font-medium leading-tight">
                         * Limitado a 10 registros com 04 imagens cada.
                     </p>
                     <form onSubmit={handleSaveOrUpdate} className="space-y-4">
                         <div>
                             <label className="block text-sm font-medium text-gray-700 mb-1">Título</label>
-                            <input type="text" placeholder="Ex: Casa de Campo" value={title} onChange={e => setTitle(e.target.value)} required className="w-full p-2 border rounded-lg focus:ring-2 focus:ring-blue-500 text-sm focus:outline-none" />
+                            <input
+                                type="text"
+                                placeholder="Ex: Casa de Campo"
+                                value={title}
+                                onChange={e => setTitle(e.target.value)}
+                                required
+                                disabled={isLimitReached}
+                                className="w-full p-2 border rounded-lg focus:ring-2 focus:ring-blue-500 text-sm focus:outline-none disabled:bg-gray-100 disabled:cursor-not-allowed"
+                            />
                         </div>
 
                         <div>
                             <label className="block text-sm font-medium text-gray-700 mb-1">Descrição</label>
-                            <textarea placeholder="Detalhes do registro..." value={description} onChange={e => setDescription(e.target.value)} required className="w-full p-2 border rounded-lg focus:ring-2 focus:ring-blue-500 text-sm focus:outline-none h-24" />
+                            <textarea
+                                placeholder="Detalhes do registro..."
+                                value={description}
+                                onChange={e => setDescription(e.target.value)}
+                                required
+                                disabled={isLimitReached}
+                                className="w-full p-2 border rounded-lg focus:ring-2 focus:ring-blue-500 text-sm focus:outline-none h-24 disabled:bg-gray-100 disabled:cursor-not-allowed"
+                            />
                         </div>
 
                         <div>
                             <label className="block text-sm font-medium text-gray-700 mb-1">Imagens do Registro</label>
-                            <label className="flex flex-col items-center justify-center w-full h-24 border-2 border-gray-300 border-dashed rounded-lg cursor-pointer bg-gray-50 hover:bg-gray-100 transition p-2 text-center">
+                            <label className={`flex flex-col items-center justify-center w-full h-24 border-2 border-dashed rounded-lg transition p-2 text-center ${images.length >= 4 || isLimitReached ? 'border-gray-200 bg-gray-100 cursor-not-allowed opacity-70' : 'border-gray-300 bg-gray-50 hover:bg-gray-100 cursor-pointer'}`}>
                                 <svg className="w-6 h-6 mb-1 text-gray-500" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"></path></svg>
-                                <p className="text-xs text-gray-700 font-semibold">{fileCountText ? fileCountText : 'Adicionar fotos'}</p>
-                                <input type="file" accept="image/*" multiple onChange={handleMultipleImagesChange} className="hidden" />
+                                <p className="text-xs text-gray-700 font-semibold">{fileCountText ? fileCountText : 'Adicionar fotos (Max 4)'}</p>
+                                <input
+                                    type="file"
+                                    accept="image/*"
+                                    multiple
+                                    onChange={handleMultipleImagesChange}
+                                    className="hidden"
+                                    disabled={images.length >= 4 || isLimitReached}
+                                />
                             </label>
                             <p className="text-[10px] text-green-600 mt-1 font-medium leading-tight">
-                                * Compressão automática ativa! Fotos de alta resolução serão reduzidas sem perda de fidelidade para garantir o salvamento rápido.
+                                * Compressão automática ativa! Fotos de alta resolução serão reduzidas sem perda de fidelidade.
                             </p>
                         </div>
 
-                        {/* GALERIA DE ORGANIZAÇÃO – agora sempre exibida se houver imagens */}
+                        {/* GALERIA DE ORGANIZAÇÃO */}
                         {images.length > 0 && (
                             <div className="p-1">
-                                <p className="text-[11px] font-semibold text-gray-500 mb-1.5">Organizar fotos antes de salvar:</p>
+                                <p className="text-[11px] font-semibold text-gray-500 mb-1.5 flex justify-between">
+                                    <span>Organizar fotos antes de salvar:</span>
+                                    <span className={images.length === 4 ? "text-red-500" : "text-blue-500"}>{images.length}/4</span>
+                                </p>
                                 <div className="grid grid-cols-3 gap-2 max-h-32 overflow-y-auto p-1.5 bg-gray-50 border rounded-lg">
                                     {images.map((img, idx) => (
                                         <div key={idx} className="relative h-14 w-full border rounded bg-white group/formthumb">
@@ -393,8 +451,8 @@ export default function Dashboard() {
                         <div className="flex flex-col gap-2 pt-1">
                             <button
                                 type="submit"
-                                disabled={isLoading}
-                                className={`w-full text-white p-2.5 rounded-lg font-medium transition shadow-sm ${isLoading ? 'bg-gray-400 cursor-not-allowed' : editingId ? 'bg-amber-500 hover:bg-amber-600' : 'bg-blue-600 hover:bg-blue-700'}`}
+                                disabled={isLoading || isLimitReached}
+                                className={`w-full text-white p-2.5 rounded-lg font-medium transition shadow-sm ${isLoading || isLimitReached ? 'bg-gray-400 cursor-not-allowed' : editingId ? 'bg-amber-500 hover:bg-amber-600' : 'bg-blue-600 hover:bg-blue-700'}`}
                             >
                                 {isLoading ? 'Processando...' : editingId ? 'Salvar Alterações' : 'Salvar Registro'}
                             </button>
@@ -434,7 +492,13 @@ export default function Dashboard() {
                         </div>
                     </div>
 
-                    <h2 className="text-xl font-semibold mb-4 text-gray-900">Meus Registros</h2>
+                    <div className="flex justify-between items-center mb-4">
+                        <h2 className="text-xl font-semibold text-gray-900">Meus Registros</h2>
+                        <span className={`text-xs font-bold px-2 py-1 rounded-md ${items.length >= 10 ? 'bg-red-100 text-red-700' : 'bg-blue-100 text-blue-700'}`}>
+                            {items.length} / 10
+                        </span>
+                    </div>
+
                     {items.length === 0 ? (
                         <p className="text-sm text-gray-500 text-center py-8">Nenhum registro cadastrado ainda.</p>
                     ) : (
@@ -500,20 +564,21 @@ export default function Dashboard() {
                                             </div>
                                         </div>
 
+                                        {/* Ações */}
                                         <div className="p-4 pt-0 grid grid-cols-2 gap-2">
                                             <button
                                                 type="button"
-                                                disabled={isLoading}
                                                 onClick={() => startEdit(item)}
-                                                className={`py-2 rounded-lg text-sm font-medium transition border ${isThisItemEditing ? 'bg-amber-500 text-white border-amber-500' : 'bg-amber-50 text-amber-700 hover:bg-amber-100 border-amber-200'} disabled:opacity-50 disabled:cursor-not-allowed`}
+                                                disabled={isLoading || isThisItemEditing}
+                                                className={`py-2 px-3 rounded-lg text-sm font-semibold transition disabled:opacity-50 flex items-center justify-center gap-1 ${isThisItemEditing ? 'bg-amber-500 text-white' : 'bg-amber-50 text-amber-700 hover:bg-amber-100'}`}
                                             >
                                                 {isThisItemEditing ? 'Editando...' : 'Editar'}
                                             </button>
                                             <button
                                                 type="button"
-                                                disabled={isLoading}
                                                 onClick={() => handleDelete(item._id)}
-                                                className="bg-red-50 text-red-600 py-2 rounded-lg hover:bg-red-100 text-sm font-medium transition border border-red-200 disabled:opacity-50 disabled:cursor-not-allowed"
+                                                disabled={isLoading || isThisItemEditing}
+                                                className="py-2 px-3 bg-red-50 text-red-600 rounded-lg text-sm font-medium hover:bg-red-100 transition border border-red-200 disabled:opacity-50 flex items-center justify-center gap-1 disabled:cursor-not-allowed"
                                             >
                                                 Excluir
                                             </button>

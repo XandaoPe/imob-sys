@@ -3,6 +3,23 @@
 import React from 'react';
 import imageCompression from 'browser-image-compression';
 
+// COMPONENTE DE TOOLTIP DE INFORMAÇÃO (Tags trocadas de div para span para evitar erro de hidratação no HTML)
+const InfoTooltip = ({ text }: { text: string }) => {
+    return (
+        <span className="group relative inline-flex items-center ml-1">
+            <span className="w-4 h-4 rounded-full bg-gray-200 hover:bg-blue-600 hover:text-white text-gray-600 font-bold text-[10px] flex items-center justify-center transition-colors cursor-help select-none">
+                ?
+            </span>
+            <span className="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 hidden group-hover:flex flex-col items-center z-50 w-52 pointer-events-none animate-fadeIn">
+                <span className="relative z-10 p-2 text-xs leading-relaxed text-white bg-gray-900/95 rounded-lg shadow-xl text-center font-normal">
+                    {text}
+                </span>
+                <span className="w-2 h-2 -mt-1 rotate-45 bg-gray-900/95 block"></span>
+            </span>
+        </span>
+    );
+};
+
 interface ItemFormProps {
     editingId: string | null;
     isLimitReached: boolean;
@@ -143,7 +160,10 @@ export default function ItemForm({
             </p>
             <form onSubmit={onSaveOrUpdate} className="space-y-4">
                 <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">Título</label>
+                    <label className="flex items-center text-sm font-medium text-gray-700 mb-1">
+                        <span>Título</span>
+                        <InfoTooltip text="Nome principal do anúncio que aparecerá em destaque para os clientes (Ex: Casa de Campo, Terreno 300m²)." />
+                    </label>
                     <input
                         type="text"
                         placeholder="Ex: Casa de Campo"
@@ -156,7 +176,10 @@ export default function ItemForm({
                 </div>
 
                 <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">Descrição</label>
+                    <label className="flex items-center text-sm font-medium text-gray-700 mb-1">
+                        <span>Descrição</span>
+                        <InfoTooltip text="Detalhes completos como localização, dimensões, cômodos, facilidades, preço e condições de pagamento." />
+                    </label>
                     <textarea
                         placeholder="Detalhes do registro..."
                         value={description}
@@ -168,7 +191,10 @@ export default function ItemForm({
                 </div>
 
                 <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">Imagens do Registro</label>
+                    <label className="flex items-center text-sm font-medium text-gray-700 mb-1">
+                        <span>Imagens do Registro</span>
+                        <InfoTooltip text="Envie até 4 fotos do imóvel/produto. Elas serão otimizadas automaticamente para carregar rápido no celular do cliente." />
+                    </label>
                     <label className={`flex flex-col items-center justify-center w-full h-24 border-2 border-dashed rounded-lg transition p-2 text-center ${images.length >= 4 || isLimitReached ? 'border-gray-200 bg-gray-100 cursor-not-allowed opacity-70' : 'border-gray-300 bg-gray-50 hover:bg-gray-100 cursor-pointer'}`}>
                         <svg className="w-6 h-6 mb-1 text-gray-500" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"></path></svg>
                         <p className="text-xs text-gray-700 font-semibold">{fileCountText ? fileCountText : 'Adicionar fotos (Max 4)'}</p>
@@ -188,10 +214,13 @@ export default function ItemForm({
 
                 {images.length > 0 && (
                     <div className="p-1">
-                        <p className="text-[11px] font-semibold text-gray-500 mb-1.5 flex justify-between">
-                            <span>Organizar fotos antes de salvar:</span>
+                        <div className="text-[11px] font-semibold text-gray-500 mb-1.5 flex justify-between items-center">
+                            <span className="flex items-center">
+                                Organizar fotos antes de salvar:
+                                <InfoTooltip text="A primeira imagem da esquerda será a foto principal da capa do anúncio. Use as setinhas ao passar o mouse para alterar a ordem." />
+                            </span>
                             <span className={images.length === 4 ? "text-red-500" : "text-blue-500"}>{images.length}/4</span>
-                        </p>
+                        </div>
                         <div className="grid grid-cols-3 gap-2 max-h-32 overflow-y-auto p-1.5 bg-gray-50 border rounded-lg">
                             {images.map((img, idx) => (
                                 <div key={idx} className="relative h-14 w-full border rounded bg-white group/formthumb">

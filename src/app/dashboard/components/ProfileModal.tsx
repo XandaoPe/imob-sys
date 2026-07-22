@@ -2,6 +2,23 @@
 
 import React from 'react';
 
+// COMPONENTE DE TOOLTIP DE INFORMAÇÃO (Tags trocadas de div para span para evitar erro de hidratação no HTML)
+const InfoTooltip = ({ text }: { text: string }) => {
+    return (
+        <span className="group relative inline-flex items-center ml-1">
+            <span className="w-4 h-4 rounded-full bg-gray-200 hover:bg-blue-600 hover:text-white text-gray-600 font-bold text-[10px] flex items-center justify-center transition-colors cursor-help select-none">
+                ?
+            </span>
+            <span className="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 hidden group-hover:flex flex-col items-center z-50 w-52 pointer-events-none animate-fadeIn">
+                <span className="relative z-10 p-2 text-xs leading-relaxed text-white bg-gray-900/95 rounded-lg shadow-xl text-center font-normal">
+                    {text}
+                </span>
+                <span className="w-2 h-2 -mt-1 rotate-45 bg-gray-900/95 block"></span>
+            </span>
+        </span>
+    );
+};
+
 interface ProfileModalProps {
     isOpen: boolean;
     onClose: () => void;
@@ -17,8 +34,8 @@ interface ProfileModalProps {
     setTenantWebsiteLink: (val: string) => void;
     tenantBusinessCardLink: string;
     setTenantBusinessCardLink: (val: string) => void;
-    tenantPassword: string; // Obrigatório para a alteração de senha
-    setTenantPassword: (val: string) => void; // Obrigatório
+    tenantPassword: string;
+    setTenantPassword: (val: string) => void;
     onUpdateProfile: (e: React.FormEvent) => void;
     isSavingProfile: boolean;
 }
@@ -74,7 +91,10 @@ export default function ProfileModal({
 
                 <form onSubmit={onUpdateProfile} className="space-y-4">
                     <div>
-                        <label className="block text-sm font-medium text-gray-700 mb-1">Nome Completo</label>
+                        <label className="flex items-center text-sm font-medium text-gray-700 mb-1">
+                            <span>Nome Completo</span>
+                            <InfoTooltip text="Seu nome profissional ou o nome da sua empresa/imobiliária exibido nos anúncios." />
+                        </label>
                         <input
                             type="text"
                             value={tenantName}
@@ -86,7 +106,10 @@ export default function ProfileModal({
 
                     <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                         <div>
-                            <label className="block text-sm font-medium text-gray-700 mb-1">E-mail</label>
+                            <label className="flex items-center text-sm font-medium text-gray-700 mb-1">
+                                <span>E-mail</span>
+                                <InfoTooltip text="Endereço de e-mail de acesso e contato administrativo." />
+                            </label>
                             <input
                                 type="email"
                                 value={tenantEmail}
@@ -96,7 +119,10 @@ export default function ProfileModal({
                             />
                         </div>
                         <div>
-                            <label className="block text-sm font-medium text-gray-700 mb-1">Telefone / WhatsApp</label>
+                            <label className="flex items-center text-sm font-medium text-gray-700 mb-1">
+                                <span>Telefone / WhatsApp</span>
+                                <InfoTooltip text="Número para o qual os clientes serão redirecionados diretamente no WhatsApp ao clicarem no seu anúncio." />
+                            </label>
                             <input
                                 type="text"
                                 value={tenantPhone}
@@ -109,7 +135,10 @@ export default function ProfileModal({
                     </div>
 
                     <div>
-                        <label className="block text-sm font-medium text-gray-700 mb-1">Cidade de Atuação</label>
+                        <label className="flex items-center text-sm font-medium text-gray-700 mb-1">
+                            <span>Cidade de Atuação</span>
+                            <InfoTooltip text="Cidade e Estado onde seus anúncios serão agrupados na busca principal." />
+                        </label>
                         <input
                             type="text"
                             value={tenantCity}
@@ -120,7 +149,10 @@ export default function ProfileModal({
                     </div>
 
                     <div>
-                        <label className="block text-sm font-medium text-gray-700 mb-1">Link do seu Site</label>
+                        <label className="flex items-center text-sm font-medium text-gray-700 mb-1">
+                            <span>Link do seu Site</span>
+                            <InfoTooltip text="(Opcional) Seu portal externo ou site institucional principal." />
+                        </label>
                         <input
                             type="url"
                             value={tenantWebsiteLink}
@@ -131,7 +163,10 @@ export default function ProfileModal({
                     </div>
 
                     <div>
-                        <label className="block text-sm font-medium text-gray-700 mb-1">Link do Cartão de Visitas Virtual</label>
+                        <label className="flex items-center text-sm font-medium text-gray-700 mb-1">
+                            <span>Link do Cartão de Visitas Virtual</span>
+                            <InfoTooltip text="(Opcional) Link interativo com seus dados de contato (Linktree, vCard digital, etc)." />
+                        </label>
                         <input
                             type="url"
                             value={tenantBusinessCardLink}
@@ -141,10 +176,11 @@ export default function ProfileModal({
                         />
                     </div>
 
-                    {/* CAMPO DE NOVA SENHA */}
                     <div className="pt-2 border-t border-gray-100">
-                        <label className="block text-sm font-medium text-gray-700 mb-1">
-                            Nova Senha <span className="text-xs text-gray-400 font-normal">(deixe em branco para manter a atual)</span>
+                        <label className="flex items-center text-sm font-medium text-gray-700 mb-1">
+                            <span>Nova Senha</span>
+                            <InfoTooltip text="Preencha este campo apenas se desejar redefinir sua senha de acesso. Caso contrário, deixe vazio." />
+                            <span className="text-xs text-gray-400 font-normal ml-1">(deixe em branco para manter a atual)</span>
                         </label>
                         <input
                             type="password"

@@ -28,14 +28,16 @@ export default function ItemCard({
 
     return (
         <div
-            className={`border rounded-xl overflow-hidden flex flex-col justify-between bg-white shadow-sm transition group/card ${isThisItemEditing ? 'border-amber-400 ring-2 ring-amber-100' : 'border-gray-200 hover:shadow-md'
+            className={`border rounded-xl overflow-hidden flex flex-col justify-between bg-white dark:bg-gray-900 shadow-sm transition group/card ${isThisItemEditing
+                ? 'border-amber-400 ring-2 ring-amber-100 dark:ring-amber-900/40'
+                : 'border-gray-200 dark:border-gray-800 hover:shadow-md dark:hover:border-gray-700'
                 }`}
         >
             <div>
                 {gallery.length > 0 ? (
                     <div
                         onClick={() => onOpenVisualization(item)}
-                        className="w-full h-44 bg-gray-50 flex items-center justify-center p-2 border-b border-gray-100 relative group cursor-zoom-in"
+                        className="w-full h-44 bg-gray-50 dark:bg-gray-950 flex items-center justify-center p-2 border-b border-gray-100 dark:border-gray-800 relative group cursor-zoom-in"
                     >
                         <img
                             src={gallery[activeImageIndex] || '/placeholder.png'}
@@ -74,17 +76,19 @@ export default function ItemCard({
                         )}
                     </div>
                 ) : (
-                    <div className="w-full h-44 bg-gray-100 flex items-center justify-center text-gray-400 text-xs border-b">Sem imagem</div>
+                    <div className="w-full h-44 bg-gray-100 dark:bg-gray-800 flex items-center justify-center text-gray-400 dark:text-gray-500 text-xs border-b border-gray-200 dark:border-gray-800">
+                        Sem imagem
+                    </div>
                 )}
 
                 <div
                     onClick={() => onOpenVisualization(item)}
-                    className="p-4 cursor-zoom-in group-hover/card:bg-gray-50/50 transition-colors"
+                    className="p-4 cursor-zoom-in group-hover/card:bg-gray-50/50 dark:group-hover/card:bg-gray-800/40 transition-colors"
                 >
-                    <h3 className="font-bold text-gray-900 text-lg leading-tight mb-1 group-hover/card:text-blue-600 transition-colors flex items-center gap-1.5">
+                    <h3 className="font-bold text-gray-900 dark:text-white text-lg leading-tight mb-1 group-hover/card:text-blue-600 dark:group-hover/card:text-blue-400 transition-colors flex items-center gap-1.5">
                         {item.title}
                     </h3>
-                    <p className="text-sm text-gray-600 line-clamp-3">{item.description}</p>
+                    <p className="text-sm text-gray-600 dark:text-gray-300 line-clamp-3">{item.description}</p>
                 </div>
             </div>
 
@@ -93,7 +97,9 @@ export default function ItemCard({
                     type="button"
                     onClick={() => onStartEdit(item)}
                     disabled={isLoading || isThisItemEditing}
-                    className={`py-2 px-3 rounded-lg text-sm font-semibold transition disabled:opacity-50 flex items-center justify-center gap-1 ${isThisItemEditing ? 'bg-amber-500 text-white' : 'bg-amber-50 text-amber-700 hover:bg-amber-100'
+                    className={`py-2 px-3 rounded-lg text-sm font-semibold transition disabled:opacity-50 flex items-center justify-center gap-1 ${isThisItemEditing
+                        ? 'bg-amber-500 text-white'
+                        : 'bg-amber-50 text-amber-700 dark:bg-amber-950/40 dark:text-amber-400 hover:bg-amber-100 dark:hover:bg-amber-900/50'
                         }`}
                 >
                     {isThisItemEditing ? 'Editando...' : 'Editar'}
@@ -102,7 +108,7 @@ export default function ItemCard({
                     type="button"
                     onClick={() => onDelete(item._id)}
                     disabled={isLoading || isThisItemEditing}
-                    className="py-2 px-3 bg-red-50 text-red-600 rounded-lg text-sm font-medium hover:bg-red-100 transition border border-red-200 disabled:opacity-50 flex items-center justify-center gap-1 disabled:cursor-not-allowed"
+                    className="py-2 px-3 bg-red-50 text-red-600 dark:bg-red-950/40 dark:text-red-400 rounded-lg text-sm font-medium hover:bg-red-100 dark:hover:bg-red-900/50 transition border border-red-200 dark:border-red-900/40 disabled:opacity-50 flex items-center justify-center gap-1 disabled:cursor-not-allowed"
                 >
                     Excluir
                 </button>

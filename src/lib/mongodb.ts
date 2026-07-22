@@ -1,11 +1,5 @@
 import mongoose from 'mongoose';
 
-const MONGODB_URI = process.env.MONGODB_URI;
-
-if (!MONGODB_URI) {
-    throw new Error('Por favor, defina a variável MONGODB_URI no arquivo .env.local');
-}
-
 let cached = (global as any).mongoose;
 
 if (!cached) {
@@ -13,10 +7,16 @@ if (!cached) {
 }
 
 async function connectDB() {
+    const MONGODB_URI = process.env.MONGODB_URI;
+
+    if (!MONGODB_URI) {
+        throw new Error('Por favor, defina a variável MONGODB_URI no arquivo .env.local');
+    }
+
     if (cached.conn) return cached.conn;
 
     if (!cached.promise) {
-        cached.promise = mongoose.connect(MONGODB_URI!).then((mongooseInstance) => {
+        cached.promise = mongoose.connect(MONGODB_URI).then((mongooseInstance) => {
             return mongooseInstance;
         });
     }

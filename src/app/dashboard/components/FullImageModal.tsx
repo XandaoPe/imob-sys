@@ -18,7 +18,7 @@ export default function FullImageModal({ item, onClose, modalImageIndex, onChang
             onClick={onClose}
         >
             <div
-                className="bg-white rounded-2xl max-w-4xl w-full max-h-[90vh] overflow-hidden shadow-2xl flex flex-col relative"
+                className="bg-white dark:bg-gray-900 rounded-2xl max-w-4xl w-full max-h-[90vh] overflow-hidden shadow-2xl flex flex-col relative border border-transparent dark:border-gray-800"
                 onClick={(e) => e.stopPropagation()}
             >
                 <button
@@ -28,7 +28,7 @@ export default function FullImageModal({ item, onClose, modalImageIndex, onChang
                     &times;
                 </button>
 
-                <div className="relative bg-gray-900 flex-1 min-h-[300px] md:h-[500px] flex items-center justify-center p-4 select-none">
+                <div className="relative bg-gray-950 flex-1 min-h-[300px] md:h-[500px] flex items-center justify-center p-4 select-none">
                     {item.images && item.images.length > 0 ? (
                         <>
                             <img
@@ -64,9 +64,9 @@ export default function FullImageModal({ item, onClose, modalImageIndex, onChang
                     )}
                 </div>
 
-                <div className="p-6 bg-white border-t border-gray-100 overflow-y-auto max-h-[25vh]">
-                    <h3 className="text-2xl font-bold text-gray-900 mb-2">{item.title}</h3>
-                    <p className="text-gray-600 text-sm whitespace-pre-line leading-relaxed">{item.description}</p>
+                <div className="p-6 bg-white dark:bg-gray-900 border-t border-gray-100 dark:border-gray-800 overflow-y-auto max-h-[25vh]">
+                    <h3 className="text-2xl font-bold text-gray-900 dark:text-white mb-2">{item.title}</h3>
+                    <p className="text-gray-600 dark:text-gray-300 text-sm whitespace-pre-line leading-relaxed">{item.description}</p>
                 </div>
             </div>
         </div>

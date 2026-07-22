@@ -32,7 +32,7 @@ export default function Dashboard() {
     const [tenantCity, setTenantCity] = useState('');
     const [tenantWebsiteLink, setTenantWebsiteLink] = useState('');
     const [tenantBusinessCardLink, setTenantBusinessCardLink] = useState('');
-    const [tenantPassword, setTenantPassword] = useState(''); // <-- ESTADO PARA A NOVA SENHA
+    const [tenantPassword, setTenantPassword] = useState('');
     const [isProfileModalOpen, setIsProfileModalOpen] = useState(false);
     const [isSavingProfile, setIsSavingProfile] = useState(false);
 
@@ -164,13 +164,13 @@ export default function Dashboard() {
                     city: tenantCity,
                     websiteLink: tenantWebsiteLink,
                     businessCardLink: tenantBusinessCardLink,
-                    password: tenantPassword, // <-- ENVIANDO A SENHA
+                    password: tenantPassword,
                 }),
             });
 
             if (res.ok) {
                 alert('Perfil atualizado com sucesso!');
-                setTenantPassword(''); // Limpa o campo de senha após atualizar
+                setTenantPassword('');
                 setIsProfileModalOpen(false);
                 await fetchProfile();
             } else {
@@ -263,7 +263,7 @@ export default function Dashboard() {
     const isMasterAdmin = ['18997901236', '18997261236', '5518997901236', '5518997261236'].includes(cleanPhone);
 
     return (
-        <div className="min-h-screen bg-gray-50 p-6 text-gray-800 relative">
+        <div className="min-h-screen bg-gray-50 dark:bg-gray-950 p-6 text-gray-800 dark:text-gray-100 relative transition-colors duration-200">
 
             {/* 1. TOAST NOTIFICATION */}
             <Toast message={processingMessage} />
@@ -295,8 +295,8 @@ export default function Dashboard() {
                 setTenantWebsiteLink={setTenantWebsiteLink}
                 tenantBusinessCardLink={tenantBusinessCardLink}
                 setTenantBusinessCardLink={setTenantBusinessCardLink}
-                tenantPassword={tenantPassword}           // <-- PASSADO AQUI
-                setTenantPassword={setTenantPassword}     // <-- PASSADO AQUI
+                tenantPassword={tenantPassword}
+                setTenantPassword={setTenantPassword}
                 onUpdateProfile={handleUpdateProfile}
                 isSavingProfile={isSavingProfile}
             />
@@ -329,7 +329,7 @@ export default function Dashboard() {
                 />
 
                 {/* CONTAINER DA LISTAGEM DIREITA */}
-                <div className="bg-white p-6 rounded-xl shadow-sm border border-gray-200 md:col-span-2">
+                <div className="bg-white dark:bg-gray-900 p-6 rounded-xl shadow-sm border border-gray-200 dark:border-gray-800 md:col-span-2 transition-colors duration-200">
 
                     {/* 6. COMPARTILHAMENTO DE LINKS */}
                     <ShareLinkBox
@@ -339,14 +339,14 @@ export default function Dashboard() {
                     />
 
                     <div className="flex justify-between items-center mb-4">
-                        <h2 className="text-xl font-semibold text-gray-900">Meus Registros</h2>
-                        <span className={`text-xs font-bold px-2 py-1 rounded-md ${items.length >= 10 ? 'bg-red-100 text-red-700' : 'bg-blue-100 text-blue-700'}`}>
+                        <h2 className="text-xl font-semibold text-gray-900 dark:text-white">Meus Registros</h2>
+                        <span className={`text-xs font-bold px-2.5 py-1 rounded-md transition-colors ${items.length >= 10 ? 'bg-red-100 text-red-700 dark:bg-red-900/40 dark:text-red-400' : 'bg-blue-100 text-blue-700 dark:bg-blue-900/40 dark:text-blue-400'}`}>
                             {items.length} / 10
                         </span>
                     </div>
 
                     {items.length === 0 ? (
-                        <p className="text-sm text-gray-500 text-center py-8">Nenhum registro cadastrado ainda.</p>
+                        <p className="text-sm text-gray-500 dark:text-gray-400 text-center py-8">Nenhum registro cadastrado ainda.</p>
                     ) : (
                         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                             {items.map((item) => (

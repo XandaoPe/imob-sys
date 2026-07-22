@@ -3,18 +3,17 @@
 import React from 'react';
 import imageCompression from 'browser-image-compression';
 
-// COMPONENTE DE TOOLTIP DE INFORMAÇÃO (Tags trocadas de div para span para evitar erro de hidratação no HTML)
 const InfoTooltip = ({ text }: { text: string }) => {
     return (
         <span className="group relative inline-flex items-center ml-1">
-            <span className="w-4 h-4 rounded-full bg-gray-200 hover:bg-blue-600 hover:text-white text-gray-600 font-bold text-[10px] flex items-center justify-center transition-colors cursor-help select-none">
+            <span className="w-4 h-4 rounded-full bg-gray-200 dark:bg-gray-700 hover:bg-blue-600 dark:hover:bg-blue-500 hover:text-white text-gray-600 dark:text-gray-300 font-bold text-[10px] flex items-center justify-center transition-colors cursor-help select-none">
                 ?
             </span>
             <span className="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 hidden group-hover:flex flex-col items-center z-50 w-52 pointer-events-none animate-fadeIn">
-                <span className="relative z-10 p-2 text-xs leading-relaxed text-white bg-gray-900/95 rounded-lg shadow-xl text-center font-normal">
+                <span className="relative z-10 p-2 text-xs leading-relaxed text-white bg-gray-900/95 dark:bg-gray-800 rounded-lg shadow-xl text-center font-normal border border-transparent dark:border-gray-700">
                     {text}
                 </span>
-                <span className="w-2 h-2 -mt-1 rotate-45 bg-gray-900/95 block"></span>
+                <span className="w-2 h-2 -mt-1 rotate-45 bg-gray-900/95 dark:bg-gray-800 block"></span>
             </span>
         </span>
     );
@@ -146,21 +145,21 @@ export default function ItemForm({
     };
 
     return (
-        <div className="bg-white p-6 rounded-xl shadow-sm border border-gray-200 md:col-span-1 h-fit">
-            <h2 className="text-xl font-semibold text-gray-900">{editingId ? 'Editar Registro' : 'Novo Registro'}</h2>
+        <div className="bg-white dark:bg-gray-900 p-6 rounded-xl shadow-sm border border-gray-200 dark:border-gray-800 md:col-span-1 h-fit transition-colors">
+            <h2 className="text-xl font-semibold text-gray-900 dark:text-white">{editingId ? 'Editar Registro' : 'Novo Registro'}</h2>
 
             {isLimitReached && (
-                <div className="mt-3 mb-2 p-3 bg-red-50 border border-red-200 rounded-lg text-sm text-red-700 font-medium">
+                <div className="mt-3 mb-2 p-3 bg-red-50 dark:bg-red-950/40 border border-red-200 dark:border-red-800/50 rounded-lg text-sm text-red-700 dark:text-red-400 font-medium">
                     ⚠️ Limite de 10 registros atingido. Exclua um item existente para cadastrar novos.
                 </div>
             )}
 
-            <p className="text-[10px] text-green-600 mt-1 mb-2 font-medium leading-tight">
+            <p className="text-[10px] text-green-600 dark:text-green-400 mt-1 mb-2 font-medium leading-tight">
                 * Limitado a 10 registros com 04 imagens cada.
             </p>
             <form onSubmit={onSaveOrUpdate} className="space-y-4">
                 <div>
-                    <label className="flex items-center text-sm font-medium text-gray-700 mb-1">
+                    <label className="flex items-center text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
                         <span>Título</span>
                         <InfoTooltip text="Nome principal do anúncio que aparecerá em destaque para os clientes (Ex: Casa de Campo, Terreno 300m²)." />
                     </label>
@@ -171,12 +170,12 @@ export default function ItemForm({
                         onChange={e => setTitle(e.target.value)}
                         required
                         disabled={isLimitReached}
-                        className="w-full p-2 border rounded-lg focus:ring-2 focus:ring-blue-500 text-sm focus:outline-none disabled:bg-gray-100 disabled:cursor-not-allowed"
+                        className="w-full p-2 border border-gray-300 dark:border-gray-700 bg-white dark:bg-gray-800 text-gray-900 dark:text-white placeholder-gray-400 dark:placeholder-gray-500 rounded-lg focus:ring-2 focus:ring-blue-500 text-sm focus:outline-none disabled:bg-gray-100 dark:disabled:bg-gray-900 disabled:cursor-not-allowed transition-colors"
                     />
                 </div>
 
                 <div>
-                    <label className="flex items-center text-sm font-medium text-gray-700 mb-1">
+                    <label className="flex items-center text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
                         <span>Descrição</span>
                         <InfoTooltip text="Detalhes completos como localização, dimensões, cômodos, facilidades, preço e condições de pagamento." />
                     </label>
@@ -186,18 +185,18 @@ export default function ItemForm({
                         onChange={e => setDescription(e.target.value)}
                         required
                         disabled={isLimitReached}
-                        className="w-full p-2 border rounded-lg focus:ring-2 focus:ring-blue-500 text-sm focus:outline-none h-24 disabled:bg-gray-100 disabled:cursor-not-allowed"
+                        className="w-full p-2 border border-gray-300 dark:border-gray-700 bg-white dark:bg-gray-800 text-gray-900 dark:text-white placeholder-gray-400 dark:placeholder-gray-500 rounded-lg focus:ring-2 focus:ring-blue-500 text-sm focus:outline-none h-24 disabled:bg-gray-100 dark:disabled:bg-gray-900 disabled:cursor-not-allowed transition-colors"
                     />
                 </div>
 
                 <div>
-                    <label className="flex items-center text-sm font-medium text-gray-700 mb-1">
+                    <label className="flex items-center text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
                         <span>Imagens do Registro</span>
                         <InfoTooltip text="Envie até 4 fotos do imóvel/produto. Elas serão otimizadas automaticamente para carregar rápido no celular do cliente." />
                     </label>
-                    <label className={`flex flex-col items-center justify-center w-full h-24 border-2 border-dashed rounded-lg transition p-2 text-center ${images.length >= 4 || isLimitReached ? 'border-gray-200 bg-gray-100 cursor-not-allowed opacity-70' : 'border-gray-300 bg-gray-50 hover:bg-gray-100 cursor-pointer'}`}>
-                        <svg className="w-6 h-6 mb-1 text-gray-500" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"></path></svg>
-                        <p className="text-xs text-gray-700 font-semibold">{fileCountText ? fileCountText : 'Adicionar fotos (Max 4)'}</p>
+                    <label className={`flex flex-col items-center justify-center w-full h-24 border-2 border-dashed rounded-lg transition p-2 text-center ${images.length >= 4 || isLimitReached ? 'border-gray-200 dark:border-gray-800 bg-gray-100 dark:bg-gray-800/50 cursor-not-allowed opacity-70' : 'border-gray-300 dark:border-gray-700 bg-gray-50 dark:bg-gray-800 hover:bg-gray-100 dark:hover:bg-gray-700/80 cursor-pointer'}`}>
+                        <svg className="w-6 h-6 mb-1 text-gray-500 dark:text-gray-400" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"></path></svg>
+                        <p className="text-xs text-gray-700 dark:text-gray-300 font-semibold">{fileCountText ? fileCountText : 'Adicionar fotos (Max 4)'}</p>
                         <input
                             type="file"
                             accept="image/*"
@@ -207,23 +206,23 @@ export default function ItemForm({
                             disabled={images.length >= 4 || isLimitReached}
                         />
                     </label>
-                    <p className="text-[10px] text-green-600 mt-1 font-medium leading-tight">
+                    <p className="text-[10px] text-green-600 dark:text-green-400 mt-1 font-medium leading-tight">
                         * Compressão automática ativa! Fotos de alta resolução serão reduzidas sem perda de fidelidade.
                     </p>
                 </div>
 
                 {images.length > 0 && (
                     <div className="p-1">
-                        <div className="text-[11px] font-semibold text-gray-500 mb-1.5 flex justify-between items-center">
+                        <div className="text-[11px] font-semibold text-gray-500 dark:text-gray-400 mb-1.5 flex justify-between items-center">
                             <span className="flex items-center">
                                 Organizar fotos antes de salvar:
                                 <InfoTooltip text="A primeira imagem da esquerda será a foto principal da capa do anúncio. Use as setinhas ao passar o mouse para alterar a ordem." />
                             </span>
-                            <span className={images.length === 4 ? "text-red-500" : "text-blue-500"}>{images.length}/4</span>
+                            <span className={images.length === 4 ? "text-red-500 dark:text-red-400" : "text-blue-500 dark:text-blue-400"}>{images.length}/4</span>
                         </div>
-                        <div className="grid grid-cols-3 gap-2 max-h-32 overflow-y-auto p-1.5 bg-gray-50 border rounded-lg">
+                        <div className="grid grid-cols-3 gap-2 max-h-32 overflow-y-auto p-1.5 bg-gray-50 dark:bg-gray-800/50 border border-gray-200 dark:border-gray-700 rounded-lg">
                             {images.map((img, idx) => (
-                                <div key={idx} className="relative h-14 w-full border rounded bg-white group/formthumb">
+                                <div key={idx} className="relative h-14 w-full border border-gray-200 dark:border-gray-700 rounded bg-white dark:bg-gray-800 group/formthumb">
                                     <img src={img} className="h-full w-full object-cover rounded" alt="form-thumb" />
                                     <button
                                         type="button"
@@ -254,7 +253,7 @@ export default function ItemForm({
                     <button
                         type="submit"
                         disabled={isLoading || isLimitReached}
-                        className={`w-full text-white p-2.5 rounded-lg font-medium transition shadow-sm ${isLoading || isLimitReached ? 'bg-gray-400 cursor-not-allowed' : editingId ? 'bg-amber-500 hover:bg-amber-600' : 'bg-blue-600 hover:bg-blue-700'
+                        className={`w-full text-white p-2.5 rounded-lg font-medium transition shadow-sm ${isLoading || isLimitReached ? 'bg-gray-400 dark:bg-gray-700 cursor-not-allowed' : editingId ? 'bg-amber-500 dark:bg-amber-600 hover:bg-amber-600 dark:hover:bg-amber-500' : 'bg-blue-600 dark:bg-blue-500 hover:bg-blue-700 dark:hover:bg-blue-600'
                             }`}
                     >
                         {isLoading ? 'Processando...' : editingId ? 'Salvar Alterações' : 'Salvar Registro'}
@@ -264,7 +263,7 @@ export default function ItemForm({
                             type="button"
                             disabled={isLoading}
                             onClick={onResetForm}
-                            className="w-full bg-gray-100 text-gray-600 p-2.5 rounded-lg font-medium hover:bg-gray-200 transition disabled:opacity-50"
+                            className="w-full bg-gray-100 dark:bg-gray-800 text-gray-600 dark:text-gray-300 p-2.5 rounded-lg font-medium hover:bg-gray-200 dark:hover:bg-gray-700 transition disabled:opacity-50"
                         >
                             Cancelar Edição
                         </button>

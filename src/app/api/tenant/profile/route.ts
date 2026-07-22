@@ -50,20 +50,17 @@ export async function PUT(request: Request) {
         const decoded = jwt.verify(token, process.env.JWT_SECRET || 'secret') as { tenantId: string };
 
         const body = await request.json();
-        const { name, email, phone, city, businessCardLink } = body;
+        const { name, email, phone, city, websiteLink, businessCardLink } = body;
 
-        // Validação simples de campos obrigatórios
         if (!name || !email || !phone) {
             return NextResponse.json({ message: 'Nome, E-mail e Telefone são obrigatórios.' }, { status: 400 });
         }
 
-        // Evita duplicidade de e-mail com outros tenants
         const emailExists = await Tenant.findOne({ email, _id: { $ne: decoded.tenantId } });
         if (emailExists) {
             return NextResponse.json({ message: 'Este e-mail já está em uso por outro usuário.' }, { status: 400 });
         }
 
-        // Evita duplicidade de telefone com outros tenants
         const phoneExists = await Tenant.findOne({ phone, _id: { $ne: decoded.tenantId } });
         if (phoneExists) {
             return NextResponse.json({ message: 'Este telefone já está em uso por outro usuário.' }, { status: 400 });
@@ -71,7 +68,7 @@ export async function PUT(request: Request) {
 
         const updatedTenant = await Tenant.findByIdAndUpdate(
             decoded.tenantId,
-            { name, email, phone, city, businessCardLink },
+            { name, email, phone, city, websiteLink, businessCardLink }, // <-- Adicionado websiteLink
             { new: true, runValidators: true }
         ).select('-passwordHash');
 

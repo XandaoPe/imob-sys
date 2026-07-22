@@ -12,9 +12,10 @@ export default function AuthPage() {
   const [loginIdentifier, setLoginIdentifier] = useState(''); // E-mail ou Telefone
   const [password, setPassword] = useState('');
   const [error, setError] = useState('');
+  const [websiteLink, setWebsiteLink] = useState(''); // Estado para o Link do Site
   const [businessCardLink, setBusinessCardLink] = useState('');
 
-  // Estados para o novo autocomplete de Cidade
+  // Estados para o autocomplete de Cidade
   const [city, setCity] = useState('');
   const [allCities, setAllCities] = useState<string[]>([]);
 
@@ -23,11 +24,9 @@ export default function AuthPage() {
   // Carrega a lista de cidades do Brasil formatada ao montar a tela
   useEffect(() => {
     try {
-      // 1. Obtém a lista de todas as siglas de estados (UFs) do Brasil: ["SP", "RJ", ...]
       const ufs = estadosCidades.states();
-
-      // 2. Para cada estado, busca suas respectivas cidades e formata como "Nome da Cidade (UF)"
       const listaFormatada: string[] = [];
+
       ufs.forEach((uf: string) => {
         const cidadesDoEstado = estadosCidades.cities(uf);
         cidadesDoEstado.forEach((nomeCidade: string) => {
@@ -35,9 +34,7 @@ export default function AuthPage() {
         });
       });
 
-      // 3. Ordena a lista em ordem alfabética para facilitar a navegação do usuário
       listaFormatada.sort((a, b) => a.localeCompare(b));
-
       setAllCities(listaFormatada);
     } catch (err) {
       console.error("Erro ao carregar a lista de cidades:", err);
@@ -63,10 +60,10 @@ export default function AuthPage() {
 
     const endpoint = isLogin ? '/api/auth/login' : '/api/auth/register';
 
-    // Se for registro, enviamos também o campo "city"
+    // Se for registro, enviamos também os campos "city" e "websiteLink"
     const body = isLogin
       ? { loginIdentifier, password }
-      : { name, email, phone, password, city, businessCardLink };
+      : { name, email, phone, password, city, websiteLink, businessCardLink };
 
     const res = await fetch(endpoint, {
       method: 'POST',
@@ -88,6 +85,7 @@ export default function AuthPage() {
         setPhone('');
         setPassword('');
         setCity('');
+        setWebsiteLink('');
         setBusinessCardLink('');
         alert('Cadastro realizado! Faça login agora.');
       }
@@ -110,17 +108,39 @@ export default function AuthPage() {
             <>
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-1">Nome Completo</label>
-                <input type="text" value={name} onChange={e => setName(e.target.value)} required className="w-full p-2.5 border rounded-lg focus:ring-2 focus:ring-blue-500 text-sm focus:outline-none" placeholder="Seu nome" />
+                <input
+                  type="text"
+                  value={name}
+                  onChange={e => setName(e.target.value)}
+                  required
+                  className="w-full p-2.5 border rounded-lg focus:ring-2 focus:ring-blue-500 text-sm focus:outline-none"
+                  placeholder="Seu nome"
+                />
               </div>
 
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-1">E-mail</label>
-                <input type="email" value={email} onChange={e => setEmail(e.target.value)} required className="w-full p-2.5 border rounded-lg focus:ring-2 focus:ring-blue-500 text-sm focus:outline-none" placeholder="seu@email.com" />
+                <input
+                  type="email"
+                  value={email}
+                  onChange={e => setEmail(e.target.value)}
+                  required
+                  className="w-full p-2.5 border rounded-lg focus:ring-2 focus:ring-blue-500 text-sm focus:outline-none"
+                  placeholder="seu@email.com"
+                />
               </div>
 
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-1">WhatsApp / Telefone</label>
-                <input type="text" value={phone} onChange={handlePhoneChange} maxLength={15} required className="w-full p-2.5 border rounded-lg focus:ring-2 focus:ring-blue-500 text-sm focus:outline-none" placeholder="(00) 00000-0000" />
+                <input
+                  type="text"
+                  value={phone}
+                  onChange={handlePhoneChange}
+                  maxLength={15}
+                  required
+                  className="w-full p-2.5 border rounded-lg focus:ring-2 focus:ring-blue-500 text-sm focus:outline-none"
+                  placeholder="(00) 00000-0000"
+                />
               </div>
 
               {/* Campo de Autocomplete de Cidades */}
@@ -142,6 +162,18 @@ export default function AuthPage() {
                 </datalist>
               </div>
 
+              {/* NOVO CAMPO: Link do Seu Site */}
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">Link do Seu Site</label>
+                <input
+                  type="url"
+                  value={websiteLink}
+                  onChange={e => setWebsiteLink(e.target.value)}
+                  placeholder="https://seusite.com.br"
+                  className="w-full p-2.5 border rounded-lg focus:ring-2 focus:ring-blue-500 text-sm focus:outline-none"
+                />
+              </div>
+
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-1">Link do Cartão de Visitas Virtual</label>
                 <input
@@ -158,22 +190,45 @@ export default function AuthPage() {
           {isLogin && (
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-1">E-mail ou Telefone</label>
-              <input type="text" value={loginIdentifier} onChange={e => setLoginIdentifier(e.target.value)} required className="w-full p-2.5 border rounded-lg focus:ring-2 focus:ring-blue-500 text-sm focus:outline-none" placeholder="Digite seu e-mail ou nº de telefone" />
+              <input
+                type="text"
+                value={loginIdentifier}
+                onChange={e => setLoginIdentifier(e.target.value)}
+                required
+                className="w-full p-2.5 border rounded-lg focus:ring-2 focus:ring-blue-500 text-sm focus:outline-none"
+                placeholder="Digite seu e-mail ou nº de telefone"
+              />
             </div>
           )}
 
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-1">Senha</label>
-            <input type="password" value={password} onChange={e => setPassword(e.target.value)} required className="w-full p-2.5 border rounded-lg focus:ring-2 focus:ring-blue-500 text-sm focus:outline-none" placeholder="••••••••" />
+            <input
+              type="password"
+              value={password}
+              onChange={e => setPassword(e.target.value)}
+              required
+              className="w-full p-2.5 border rounded-lg focus:ring-2 focus:ring-blue-500 text-sm focus:outline-none"
+              placeholder="••••••••"
+            />
           </div>
 
-          <button type="submit" className="w-full bg-blue-600 text-white p-2.5 rounded-lg font-medium hover:bg-blue-700 transition shadow-sm mt-2">
+          <button
+            type="submit"
+            className="w-full bg-blue-600 text-white p-2.5 rounded-lg font-medium hover:bg-blue-700 transition shadow-sm mt-2"
+          >
             {isLogin ? 'Entrar' : 'Cadastrar'}
           </button>
         </form>
 
         <p className="text-center text-sm text-gray-600 mt-4">
-          <button onClick={() => { setIsLogin(!isLogin); setError(''); }} className="text-blue-600 font-medium hover:underline">
+          <button
+            onClick={() => {
+              setIsLogin(!isLogin);
+              setError('');
+            }}
+            className="text-blue-600 font-medium hover:underline"
+          >
             {isLogin ? 'Não tem conta? Cadastre-se' : 'Já tem uma conta? Conecte-se'}
           </button>
         </p>

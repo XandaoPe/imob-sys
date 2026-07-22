@@ -13,6 +13,8 @@ interface ProfileModalProps {
     setTenantPhone: (val: string) => void;
     tenantCity: string;
     setTenantCity: (val: string) => void;
+    tenantWebsiteLink: string; // <-- NOVO
+    setTenantWebsiteLink: (val: string) => void; // <-- NOVO
     tenantBusinessCardLink: string;
     setTenantBusinessCardLink: (val: string) => void;
     onUpdateProfile: (e: React.FormEvent) => void;
@@ -30,6 +32,8 @@ export default function ProfileModal({
     setTenantPhone,
     tenantCity,
     setTenantCity,
+    tenantWebsiteLink,
+    setTenantWebsiteLink,
     tenantBusinessCardLink,
     setTenantBusinessCardLink,
     onUpdateProfile,
@@ -108,6 +112,18 @@ export default function ProfileModal({
                             onChange={(e) => setTenantCity(e.target.value)}
                             placeholder="Ex: Presidente Epitácio - SP"
                             className="w-full p-2.5 border rounded-lg focus:ring-2 focus:ring-blue-500 text-sm focus:outline-none"
+                        />
+                    </div>
+
+                    {/* NOVO CAMPO: Link do seu Site */}
+                    <div>
+                        <label className="block text-sm font-medium text-gray-700 mb-1">Link do seu Site</label>
+                        <input
+                            type="url"
+                            value={tenantWebsiteLink}
+                            onChange={(e) => setTenantWebsiteLink(e.target.value)}
+                            placeholder="https://seusite.com.br"
+                            className="w-full p-2.5 border rounded-lg focus:ring-2 focus:ring-blue-500 text-sm focus:outline-none text-blue-600 font-mono"
                         />
                     </div>
 

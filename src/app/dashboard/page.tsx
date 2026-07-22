@@ -30,6 +30,7 @@ export default function Dashboard() {
     const [tenantEmail, setTenantEmail] = useState('');
     const [tenantPhone, setTenantPhone] = useState('');
     const [tenantCity, setTenantCity] = useState('');
+    const [tenantWebsiteLink, setTenantWebsiteLink] = useState('');
     const [tenantBusinessCardLink, setTenantBusinessCardLink] = useState('');
     const [isProfileModalOpen, setIsProfileModalOpen] = useState(false);
     const [isSavingProfile, setIsSavingProfile] = useState(false);
@@ -79,6 +80,7 @@ export default function Dashboard() {
                 setTenantEmail(data.email || '');
                 setTenantPhone(data.phone || '');
                 setTenantCity(data.city || '');
+                setTenantWebsiteLink(data.websiteLink || ''); // <-- NOVO
                 setTenantBusinessCardLink(data.businessCardLink || '');
             }
         } catch (error) {
@@ -159,6 +161,7 @@ export default function Dashboard() {
                     email: tenantEmail,
                     phone: formattedPhone,
                     city: tenantCity,
+                    websiteLink: tenantWebsiteLink, // <-- ENVIANDO WEBSITE
                     businessCardLink: tenantBusinessCardLink,
                 }),
             });
@@ -282,6 +285,8 @@ export default function Dashboard() {
                 setTenantPhone={setTenantPhone}
                 tenantCity={tenantCity}
                 setTenantCity={setTenantCity}
+                tenantWebsiteLink={tenantWebsiteLink} // <-- AQUI
+                setTenantWebsiteLink={setTenantWebsiteLink} // <-- AQUI
                 tenantBusinessCardLink={tenantBusinessCardLink}
                 setTenantBusinessCardLink={setTenantBusinessCardLink}
                 onUpdateProfile={handleUpdateProfile}

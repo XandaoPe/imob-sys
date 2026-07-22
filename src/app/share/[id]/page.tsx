@@ -12,7 +12,8 @@ interface Item {
 interface TenantData {
     tenantName: string;
     tenantPhone: string;
-    businessCardLink?: string; // Vinculado diretamente ao Corretor
+    websiteLink?: string; // <-- NOVO
+    businessCardLink?: string;
     items: Item[];
 }
 
@@ -131,6 +132,22 @@ export default function PublicSharePage() {
                                 <path strokeLinecap="round" strokeLinejoin="round" d="M10 6H5a2 2 0 00-2 2v9a2 2 0 002 2h14a2 2 0 002-2v-5M16.5 3.5l3.5 3.5m0 0l-3.5 3.5m3.5-3.5H11" />
                             </svg>
                             Clique aqui para visualizar informações de contato
+                        </a>
+                    </div>
+                )}
+
+                {data.websiteLink && (
+                    <div className="mt-3 w-full max-w-sm">
+                        <a
+                            href={data.websiteLink}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="w-full bg-slate-800 text-white py-2.5 px-4 rounded-xl text-xs font-semibold flex items-center justify-center gap-1.5 hover:bg-slate-900 shadow-sm transition-all transform hover:-translate-y-0.5"
+                        >
+                            <svg className="w-4 h-4" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
+                                <path strokeLinecap="round" strokeLinejoin="round" d="M21 12a9 9 0 01-9 9m9-9a9 9 0 00-9-9m9 9H3m9 9a9 9 0 01-9-9m9 9c1.657 0 3-4.03 3-9s-1.343-9-3-9m0 18c-1.657 0-3-4.03-3-9s1.343-9 3-9m-9 9a9 9 0 019-9" />
+                            </svg>
+                            Visitar nosso Site
                         </a>
                     </div>
                 )}

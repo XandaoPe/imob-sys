@@ -9,16 +9,16 @@ export async function GET(req: Request, { params }: { params: Promise<{ id: stri
         const resolvedParams = await params;
         const tenantId = resolvedParams.id;
 
-        // INCLUSÃO: Adicionado 'businessCardLink' no select do Tenant
-        const tenant = await Tenant.findById(tenantId).select('name phone businessCardLink');
+        // Selecionando o websiteLink do Tenant
+        const tenant = await Tenant.findById(tenantId).select('name phone websiteLink businessCardLink');
         if (!tenant) return NextResponse.json({ error: 'Página não encontrada' }, { status: 404 });
 
         const items = await Item.find({ tenantId }).select('title description images');
 
-        // RETORNO: repassando a nova propriedade para o front-end
         return NextResponse.json({
             tenantName: tenant.name,
             tenantPhone: tenant.phone,
+            websiteLink: tenant.websiteLink || '', // <-- RETORNO DO CAMPO
             businessCardLink: tenant.businessCardLink || '',
             items
         });

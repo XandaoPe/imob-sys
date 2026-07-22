@@ -32,6 +32,7 @@ export default function Dashboard() {
     const [tenantCity, setTenantCity] = useState('');
     const [tenantWebsiteLink, setTenantWebsiteLink] = useState('');
     const [tenantBusinessCardLink, setTenantBusinessCardLink] = useState('');
+    const [tenantPassword, setTenantPassword] = useState(''); // <-- ESTADO PARA A NOVA SENHA
     const [isProfileModalOpen, setIsProfileModalOpen] = useState(false);
     const [isSavingProfile, setIsSavingProfile] = useState(false);
 
@@ -80,7 +81,7 @@ export default function Dashboard() {
                 setTenantEmail(data.email || '');
                 setTenantPhone(data.phone || '');
                 setTenantCity(data.city || '');
-                setTenantWebsiteLink(data.websiteLink || ''); // <-- NOVO
+                setTenantWebsiteLink(data.websiteLink || '');
                 setTenantBusinessCardLink(data.businessCardLink || '');
             }
         } catch (error) {
@@ -161,13 +162,15 @@ export default function Dashboard() {
                     email: tenantEmail,
                     phone: formattedPhone,
                     city: tenantCity,
-                    websiteLink: tenantWebsiteLink, // <-- ENVIANDO WEBSITE
+                    websiteLink: tenantWebsiteLink,
                     businessCardLink: tenantBusinessCardLink,
+                    password: tenantPassword, // <-- ENVIANDO A SENHA
                 }),
             });
 
             if (res.ok) {
                 alert('Perfil atualizado com sucesso!');
+                setTenantPassword(''); // Limpa o campo de senha após atualizar
                 setIsProfileModalOpen(false);
                 await fetchProfile();
             } else {
@@ -276,7 +279,10 @@ export default function Dashboard() {
             {/* 3. MODAL DE EDIÇÃO DO PERFIL */}
             <ProfileModal
                 isOpen={isProfileModalOpen}
-                onClose={() => setIsProfileModalOpen(false)}
+                onClose={() => {
+                    setIsProfileModalOpen(false);
+                    setTenantPassword('');
+                }}
                 tenantName={tenantName}
                 setTenantName={setTenantName}
                 tenantEmail={tenantEmail}
@@ -285,10 +291,12 @@ export default function Dashboard() {
                 setTenantPhone={setTenantPhone}
                 tenantCity={tenantCity}
                 setTenantCity={setTenantCity}
-                tenantWebsiteLink={tenantWebsiteLink} // <-- AQUI
-                setTenantWebsiteLink={setTenantWebsiteLink} // <-- AQUI
+                tenantWebsiteLink={tenantWebsiteLink}
+                setTenantWebsiteLink={setTenantWebsiteLink}
                 tenantBusinessCardLink={tenantBusinessCardLink}
                 setTenantBusinessCardLink={setTenantBusinessCardLink}
+                tenantPassword={tenantPassword}           // <-- PASSADO AQUI
+                setTenantPassword={setTenantPassword}     // <-- PASSADO AQUI
                 onUpdateProfile={handleUpdateProfile}
                 isSavingProfile={isSavingProfile}
             />

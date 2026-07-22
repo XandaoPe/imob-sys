@@ -13,10 +13,12 @@ interface ProfileModalProps {
     setTenantPhone: (val: string) => void;
     tenantCity: string;
     setTenantCity: (val: string) => void;
-    tenantWebsiteLink: string; // <-- NOVO
-    setTenantWebsiteLink: (val: string) => void; // <-- NOVO
+    tenantWebsiteLink: string;
+    setTenantWebsiteLink: (val: string) => void;
     tenantBusinessCardLink: string;
     setTenantBusinessCardLink: (val: string) => void;
+    tenantPassword: string; // Obrigatório para a alteração de senha
+    setTenantPassword: (val: string) => void; // Obrigatório
     onUpdateProfile: (e: React.FormEvent) => void;
     isSavingProfile: boolean;
 }
@@ -36,6 +38,8 @@ export default function ProfileModal({
     setTenantWebsiteLink,
     tenantBusinessCardLink,
     setTenantBusinessCardLink,
+    tenantPassword,
+    setTenantPassword,
     onUpdateProfile,
     isSavingProfile,
 }: ProfileModalProps) {
@@ -47,7 +51,7 @@ export default function ProfileModal({
             onClick={onClose}
         >
             <div
-                className="bg-white rounded-2xl max-w-lg w-full p-6 shadow-2xl relative"
+                className="bg-white rounded-2xl max-w-lg w-full p-6 shadow-2xl relative max-h-[90vh] overflow-y-auto"
                 onClick={(e) => e.stopPropagation()}
             >
                 <button
@@ -115,7 +119,6 @@ export default function ProfileModal({
                         />
                     </div>
 
-                    {/* NOVO CAMPO: Link do seu Site */}
                     <div>
                         <label className="block text-sm font-medium text-gray-700 mb-1">Link do seu Site</label>
                         <input
@@ -135,6 +138,20 @@ export default function ProfileModal({
                             onChange={(e) => setTenantBusinessCardLink(e.target.value)}
                             placeholder="https://linktr.ee/seunome"
                             className="w-full p-2.5 border rounded-lg focus:ring-2 focus:ring-blue-500 text-sm focus:outline-none text-blue-600 font-mono"
+                        />
+                    </div>
+
+                    {/* CAMPO DE NOVA SENHA */}
+                    <div className="pt-2 border-t border-gray-100">
+                        <label className="block text-sm font-medium text-gray-700 mb-1">
+                            Nova Senha <span className="text-xs text-gray-400 font-normal">(deixe em branco para manter a atual)</span>
+                        </label>
+                        <input
+                            type="password"
+                            value={tenantPassword}
+                            onChange={(e) => setTenantPassword(e.target.value)}
+                            placeholder="••••••••"
+                            className="w-full p-2.5 border rounded-lg focus:ring-2 focus:ring-blue-500 text-sm focus:outline-none"
                         />
                     </div>
 

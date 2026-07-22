@@ -7,42 +7,75 @@ import jwt from 'jsonwebtoken';
 export async function POST(req: Request) {
     try {
         await connectDB();
-        const { loginIdentifier, password } = await req.json();
+        const body = await req.json();
+        const { loginIdentifier, password } = body;
 
-        // 1. Remove espaços em branco acidentais nas pontas (evita erros de copiar e colar)
+        // 1. Validação simples de entrada
+        if (!loginIdentifier || !password) {
+            return NextResponse.json({ error: 'Identificador e senha são obrigatórios' }, { status: 400 });
+        }
+
+        // 2. Remove espaços extras e ajusta para minúsculo
         const sanitizedIdentifier = loginIdentifier.trim();
+        const lowerIdentifier = sanitizedIdentifier.toLowerCase();
 
-        // 2. Extrai apenas os números purificados para as checagens de telefone
+        // 3. Extrai apenas dígitos para checagem de telefone
         const digits = sanitizedIdentifier.replace(/\D/g, '');
 
-        // 3. Cria variações garantidas (com 55, sem 55 e o formato original limpo)
-        const phoneWith55 = digits.startsWith('55') ? digits : '55' + digits;
-        const phoneWithout55 = digits.startsWith('55') ? digits.slice(2) : digits;
+        // 4. Monta as condições de busca
+        const orConditions: any[] = [
+            { email: { $regex: new RegExp(`^${lowerIdentifier}$`, 'i') } }
+        ];
 
-        // 4. Busca abrangente: o banco vai aceitar o match em qualquer uma das opções válidas
-        const tenant = await Tenant.findOne({
-            $or: [
-                { email: sanitizedIdentifier },
+        // Só adiciona filtros de telefone se houver uma quantidade mínima realista de dígitos (>= 8)
+        if (digits.length >= 8) {
+            const phoneWith55 = digits.startsWith('55') ? digits : '55' + digits;
+            const phoneWithout55 = digits.startsWith('55') ? digits.slice(2) : digits;
+
+            orConditions.push(
                 { phone: digits },
                 { phone: phoneWith55 },
                 { phone: phoneWithout55 }
-            ]
-        });
+            );
+        }
+
+        // 5. Busca abrangente no banco de dados
+        const tenant = await Tenant.findOne({ $or: orConditions });
 
         if (!tenant) {
             return NextResponse.json({ error: 'Credenciais inválidas' }, { status: 401 });
         }
 
-        // Compara a senha usando o passwordHash do banco de dados
+        // 6. Compara a senha enviada com o hash salvo no banco
         const isMatch = await bcrypt.compare(password, tenant.passwordHash);
         if (!isMatch) {
             return NextResponse.json({ error: 'Credenciais inválidas' }, { status: 401 });
         }
 
-        const token = jwt.sign({ tenantId: tenant._id }, process.env.JWT_SECRET || 'secret', { expiresIn: '1d' });
+        // 7. Gera o token JWT (válido por 1 dia)
+        const token = jwt.sign(
+            { tenantId: tenant._id },
+            process.env.JWT_SECRET || 'secret',
+            { expiresIn: '1d' }
+        );
 
-        return NextResponse.json({ token, tenantId: tenant._id });
+        // 8. Retorna o token e os dados do usuário
+        return NextResponse.json({
+            token,
+            tenantId: tenant._id,
+            tenant: {
+                id: tenant._id,
+                name: tenant.name,
+                email: tenant.email,
+                phone: tenant.phone,
+                city: tenant.city || '',
+                websiteLink: tenant.websiteLink || '',
+                businessCardLink: tenant.businessCardLink || '',
+            }
+        }, { status: 200 });
+
     } catch (error: any) {
+        console.error('Erro no login:', error);
         return NextResponse.json({ error: error.message }, { status: 500 });
     }
 }

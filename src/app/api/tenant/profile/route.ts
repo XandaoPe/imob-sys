@@ -1,9 +1,10 @@
 import { NextResponse } from 'next/server';
 import mongoose from 'mongoose';
 import jwt from 'jsonwebtoken';
-import Tenant from '@/models/Tenant'; // Ajuste o caminho do seu model se necessário
+import bcrypt from 'bcryptjs'; // <-- Importado bcryptjs para hash da senha
+import Tenant from '@/models/Tenant';
 
-// Função auxiliar simples para conectar ao banco (ajuste conforme seu helper de conexão)
+// Função auxiliar simples para conectar ao banco
 async function connectToDatabase() {
     if (mongoose.connection.readyState >= 1) return;
     const mongoUri = process.env.MONGODB_URI;
@@ -50,7 +51,7 @@ export async function PUT(request: Request) {
         const decoded = jwt.verify(token, process.env.JWT_SECRET || 'secret') as { tenantId: string };
 
         const body = await request.json();
-        const { name, email, phone, city, websiteLink, businessCardLink } = body;
+        const { name, email, phone, city, websiteLink, businessCardLink, password } = body; // <-- Recebe password
 
         if (!name || !email || !phone) {
             return NextResponse.json({ message: 'Nome, E-mail e Telefone são obrigatórios.' }, { status: 400 });
@@ -66,9 +67,24 @@ export async function PUT(request: Request) {
             return NextResponse.json({ message: 'Este telefone já está em uso por outro usuário.' }, { status: 400 });
         }
 
+        // Monta o objeto de atualização
+        const updateFields: any = {
+            name,
+            email,
+            phone,
+            city,
+            websiteLink,
+            businessCardLink,
+        };
+
+        // Se uma nova senha foi digitada, gera o hash e adiciona no update
+        if (password && password.trim() !== '') {
+            updateFields.passwordHash = await bcrypt.hash(password.trim(), 10);
+        }
+
         const updatedTenant = await Tenant.findByIdAndUpdate(
             decoded.tenantId,
-            { name, email, phone, city, websiteLink, businessCardLink }, // <-- Adicionado websiteLink
+            updateFields,
             { new: true, runValidators: true }
         ).select('-passwordHash');
 

@@ -4,6 +4,24 @@ import { useRouter } from 'next/navigation';
 // cspell:disable-next-line
 import estadosCidades from 'estados-cidades';
 
+// COMPONENTE DE TOOLTIP DE INFORMAÇÃO
+const InfoTooltip = ({ text }: { text: string }) => {
+  return (
+    <div className="group relative inline-flex items-center ml-1">
+      <span className="w-4 h-4 rounded-full bg-gray-200 hover:bg-blue-600 hover:text-white text-gray-600 font-bold text-[11px] flex items-center justify-center transition-colors cursor-help select-none">
+        ?
+      </span>
+      {/* Balão de Informação */}
+      <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 hidden group-hover:flex flex-col items-center z-50 w-52 pointer-events-none animate-fadeIn">
+        <span className="relative z-10 p-2 text-xs leading-relaxed text-white bg-gray-900/95 rounded-lg shadow-xl text-center font-normal">
+          {text}
+        </span>
+        <div className="w-2 h-2 -mt-1 rotate-45 bg-gray-900/95"></div>
+      </div>
+    </div>
+  );
+};
+
 export default function AuthPage() {
   const [isLogin, setIsLogin] = useState(true);
   const [name, setName] = useState('');
@@ -107,7 +125,10 @@ export default function AuthPage() {
           {!isLogin && (
             <>
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Nome Completo</label>
+                <label className="flex items-center text-sm font-medium text-gray-700 mb-1">
+                  <span>Nome Completo</span>
+                  <InfoTooltip text="Seu nome profissional ou razão social da imobiliária/empresa que será exibida nos seus anúncios." />
+                </label>
                 <input
                   type="text"
                   value={name}
@@ -119,7 +140,10 @@ export default function AuthPage() {
               </div>
 
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">E-mail</label>
+                <label className="flex items-center text-sm font-medium text-gray-700 mb-1">
+                  <span>E-mail</span>
+                  <InfoTooltip text="E-mail principal para acessar o painel, recuperar senha e receber avisos." />
+                </label>
                 <input
                   type="email"
                   value={email}
@@ -131,7 +155,10 @@ export default function AuthPage() {
               </div>
 
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">WhatsApp / Telefone</label>
+                <label className="flex items-center text-sm font-medium text-gray-700 mb-1">
+                  <span>WhatsApp / Telefone</span>
+                  <InfoTooltip text="Número de contato principal. Os clientes clicarão no seu anúncio e serão direcionados para este WhatsApp." />
+                </label>
                 <input
                   type="text"
                   value={phone}
@@ -145,7 +172,10 @@ export default function AuthPage() {
 
               {/* Campo de Autocomplete de Cidades */}
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Cidade / UF</label>
+                <label className="flex items-center text-sm font-medium text-gray-700 mb-1">
+                  <span>Cidade / UF</span>
+                  <InfoTooltip text="Sua cidade principal de atuação para regionalizar e listar seus anúncios no catálogo local." />
+                </label>
                 <input
                   type="text"
                   list="cities-datalist"
@@ -162,9 +192,12 @@ export default function AuthPage() {
                 </datalist>
               </div>
 
-              {/* NOVO CAMPO: Link do Seu Site */}
+              {/* Link do Seu Site */}
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Link do Seu Site</label>
+                <label className="flex items-center text-sm font-medium text-gray-700 mb-1">
+                  <span>Link do Seu Site</span>
+                  <InfoTooltip text="(Opcional) Link direto para o seu portal ou site próprio de vendas/produtos." />
+                </label>
                 <input
                   type="url"
                   value={websiteLink}
@@ -175,7 +208,10 @@ export default function AuthPage() {
               </div>
 
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Link do Cartão de Visitas Virtual</label>
+                <label className="flex items-center text-sm font-medium text-gray-700 mb-1">
+                  <span>Link do Cartão de Visitas Virtual</span>
+                  <InfoTooltip text="(Opcional) Link interativo com suas redes e dados (ex: Linktree, vCard ou cartão digital)." />
+                </label>
                 <input
                   type="url"
                   value={businessCardLink}
@@ -189,7 +225,10 @@ export default function AuthPage() {
 
           {isLogin && (
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">E-mail ou Telefone</label>
+              <label className="flex items-center text-sm font-medium text-gray-700 mb-1">
+                <span>E-mail ou Telefone</span>
+                <InfoTooltip text="Digite o e-mail ou o número do seu WhatsApp cadastrado durante a criação da conta." />
+              </label>
               <input
                 type="text"
                 value={loginIdentifier}
@@ -202,7 +241,10 @@ export default function AuthPage() {
           )}
 
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">Senha</label>
+            <label className="flex items-center text-sm font-medium text-gray-700 mb-1">
+              <span>Senha</span>
+              <InfoTooltip text="Sua senha secreta de acesso individual ao painel administrativo de anúncios." />
+            </label>
             <input
               type="password"
               value={password}

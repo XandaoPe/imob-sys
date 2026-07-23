@@ -191,7 +191,16 @@ export default function Dashboard() {
         setDescription(item.description);
         setImages(item.images || []);
         setFileCountText(item.images && item.images.length > 0 ? `${item.images.length} foto(s) carregada(s)` : '');
-        window.scrollTo({ top: 0, behavior: 'smooth' });
+
+        // Rola suavemente até o formulário no topo (funciona perfeitamente no mobile)
+        setTimeout(() => {
+            const formElement = document.getElementById('item-form-container');
+            if (formElement) {
+                formElement.scrollIntoView({ behavior: 'smooth', block: 'start' });
+            } else {
+                window.scrollTo({ top: 0, behavior: 'smooth' });
+            }
+        }, 50);
     };
 
     const resetForm = () => {

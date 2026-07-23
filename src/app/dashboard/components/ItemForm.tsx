@@ -145,7 +145,7 @@ export default function ItemForm({
     };
 
     return (
-        <div className="bg-white dark:bg-gray-900 p-6 rounded-xl shadow-sm border border-gray-200 dark:border-gray-800 md:col-span-1 h-fit transition-colors">
+        <div id="item-form-container" className="bg-white dark:bg-gray-900 p-6 rounded-xl shadow-sm border border-gray-200 dark:border-gray-800 md:col-span-1 h-fit transition-colors">
             <h2 className="text-xl font-semibold text-gray-900 dark:text-white">{editingId ? 'Editar Registro' : 'Novo Registro'}</h2>
 
             {isLimitReached && (

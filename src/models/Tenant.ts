@@ -10,8 +10,12 @@ const TenantSchema = new mongoose.Schema({
     phone: { type: String, required: true, unique: true },
     passwordHash: { type: String, required: true },
     city: { type: String, required: true, default: '' },
-    websiteLink: { type: String, default: '' }, // <-- NOVO CAMPO
+    websiteLink: { type: String, default: '' },
     businessCardLink: { type: String, default: '' },
+
+    // Novas propriedades de limites por cliente
+    maxItems: { type: Number, default: 10 },
+    maxImagesPerItem: { type: Number, default: 4 },
 }, {
     timestamps: true,
     collection: 'tenants'

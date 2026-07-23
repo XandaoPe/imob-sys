@@ -2,6 +2,7 @@ import { NextResponse } from 'next/server';
 import connectDB from '@/lib/mongodb';
 import Item from '@/models/Item';
 import { verifyToken } from '@/lib/auth';
+import Tenant from '@/models/Tenant';
 
 export async function DELETE(req: Request, { params }: { params: Promise<{ id: string }> }) {
     try {
@@ -29,14 +30,24 @@ export async function PUT(req: Request, { params }: { params: Promise<{ id: stri
         const tenantId = verifyToken(req);
         if (!tenantId) return NextResponse.json({ error: 'Não autorizado' }, { status: 401 });
 
+        const tenant = await Tenant.findById(tenantId);
+        const maxImagesPerItem = tenant?.maxImagesPerItem ?? 4;
+
         const resolvedParams = await params;
         const itemId = resolvedParams.id;
 
         const { title, description, images } = await req.json();
 
+        if (images && images.length > maxImagesPerItem) {
+            return NextResponse.json(
+                { error: `Seu plano permite no máximo ${maxImagesPerItem} imagens por imóvel.` },
+                { status: 400 }
+            );
+        }
+
         const updateData: any = { title, description };
         if (images) {
-            updateData.images = images; // Atualiza a galeria completa se enviada
+            updateData.images = images;
         }
 
         const updatedItem = await Item.findOneAndUpdate(

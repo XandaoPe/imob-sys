@@ -22,6 +22,8 @@ const InfoTooltip = ({ text }: { text: string }) => {
 interface ItemFormProps {
     editingId: string | null;
     isLimitReached: boolean;
+    maxItems: number;
+    maxImagesPerItem: number;
     title: string;
     setTitle: (val: string) => void;
     description: string;
@@ -40,6 +42,8 @@ interface ItemFormProps {
 export default function ItemForm({
     editingId,
     isLimitReached,
+    maxItems,
+    maxImagesPerItem,
     title,
     setTitle,
     description,
@@ -58,10 +62,11 @@ export default function ItemForm({
     const handleMultipleImagesChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
         const files = e.target.files;
         if (files && files.length > 0) {
-            const availableSlots = 4 - images.length;
+            // Validação dinâmica usando o limite configurado do cliente
+            const availableSlots = maxImagesPerItem - images.length;
 
             if (availableSlots <= 0) {
-                alert("Você já atingiu o limite máximo de 4 imagens para este registro.");
+                alert(`Você já atingiu o limite máximo de ${maxImagesPerItem} imagens para este registro.`);
                 e.target.value = '';
                 return;
             }
@@ -69,7 +74,7 @@ export default function ItemForm({
             const filesToProcess = Array.from(files).slice(0, availableSlots);
 
             if (files.length > availableSlots) {
-                alert(`Atenção: Limite de 4 imagens por registro. Apenas as ${availableSlots} primeiras fotos selecionadas serão processadas.`);
+                alert(`Atenção: Seu plano permite até ${maxImagesPerItem} imagens por registro. Apenas as ${availableSlots} primeiras fotos selecionadas serão processadas.`);
             }
 
             setIsLoading(true);
@@ -148,14 +153,21 @@ export default function ItemForm({
         <div id="item-form-container" className="bg-white dark:bg-gray-900 p-6 rounded-xl shadow-sm border border-gray-200 dark:border-gray-800 md:col-span-1 h-fit transition-colors">
             <h2 className="text-xl font-semibold text-gray-900 dark:text-white">{editingId ? 'Editar Registro' : 'Novo Registro'}</h2>
 
+            {/* Mensagem amigável quando atinge o limite */}
             {isLimitReached && (
-                <div className="mt-3 mb-2 p-3 bg-red-50 dark:bg-red-950/40 border border-red-200 dark:border-red-800/50 rounded-lg text-sm text-red-700 dark:text-red-400 font-medium">
-                    ⚠️ Limite de 10 registros atingido. Exclua um item existente para cadastrar novos.
+                <div className="mt-3 mb-2 p-3.5 bg-amber-50 dark:bg-amber-950/40 border border-amber-300 dark:border-amber-800/60 rounded-xl text-xs sm:text-sm text-amber-900 dark:text-amber-200 font-medium leading-relaxed shadow-sm">
+                    <div className="flex items-start gap-2">
+                        <span className="text-base leading-none">💡</span>
+                        <div>
+                            <strong className="block font-bold text-amber-900 dark:text-amber-100 mb-0.5">Limite de registros atingido!</strong>
+                            Você alcançou o limite máximo de <strong>{maxItems}</strong> imóveis no seu plano. Para cadastrar um novo imóvel, por favor, <strong>exclua um registro existente</strong> ou entre em contato com o suporte para expandir seu plano.
+                        </div>
+                    </div>
                 </div>
             )}
 
             <p className="text-[10px] text-green-600 dark:text-green-400 mt-1 mb-2 font-medium leading-tight">
-                * Limitado a 10 registros com 04 imagens cada.
+                * Limitado a {maxItems} registros com até {maxImagesPerItem} imagens cada.
             </p>
             <form onSubmit={onSaveOrUpdate} className="space-y-4">
                 <div>
@@ -192,18 +204,18 @@ export default function ItemForm({
                 <div>
                     <label className="flex items-center text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
                         <span>Imagens do Registro</span>
-                        <InfoTooltip text="Envie até 4 fotos do imóvel/produto. Elas serão otimizadas automaticamente para carregar rápido no celular do cliente." />
+                        <InfoTooltip text={`Envie até ${maxImagesPerItem} fotos do imóvel/produto. Elas serão otimizadas automaticamente para carregar rápido no celular do cliente.`} />
                     </label>
-                    <label className={`flex flex-col items-center justify-center w-full h-24 border-2 border-dashed rounded-lg transition p-2 text-center ${images.length >= 4 || isLimitReached ? 'border-gray-200 dark:border-gray-800 bg-gray-100 dark:bg-gray-800/50 cursor-not-allowed opacity-70' : 'border-gray-300 dark:border-gray-700 bg-gray-50 dark:bg-gray-800 hover:bg-gray-100 dark:hover:bg-gray-700/80 cursor-pointer'}`}>
+                    <label className={`flex flex-col items-center justify-center w-full h-24 border-2 border-dashed rounded-lg transition p-2 text-center ${images.length >= maxImagesPerItem || isLimitReached ? 'border-gray-200 dark:border-gray-800 bg-gray-100 dark:bg-gray-800/50 cursor-not-allowed opacity-70' : 'border-gray-300 dark:border-gray-700 bg-gray-50 dark:bg-gray-800 hover:bg-gray-100 dark:hover:bg-gray-700/80 cursor-pointer'}`}>
                         <svg className="w-6 h-6 mb-1 text-gray-500 dark:text-gray-400" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"></path></svg>
-                        <p className="text-xs text-gray-700 dark:text-gray-300 font-semibold">{fileCountText ? fileCountText : 'Adicionar fotos (Max 4)'}</p>
+                        <p className="text-xs text-gray-700 dark:text-gray-300 font-semibold">{fileCountText ? fileCountText : `Adicionar fotos (Máx ${maxImagesPerItem})`}</p>
                         <input
                             type="file"
                             accept="image/*"
                             multiple
                             onChange={handleMultipleImagesChange}
                             className="hidden"
-                            disabled={images.length >= 4 || isLimitReached}
+                            disabled={images.length >= maxImagesPerItem || isLimitReached}
                         />
                     </label>
                     <p className="text-[10px] text-green-600 dark:text-green-400 mt-1 font-medium leading-tight">
@@ -218,7 +230,7 @@ export default function ItemForm({
                                 Organizar fotos antes de salvar:
                                 <InfoTooltip text="A primeira imagem da esquerda será a foto principal da capa do anúncio. Use as setinhas ao passar o mouse para alterar a ordem." />
                             </span>
-                            <span className={images.length === 4 ? "text-red-500 dark:text-red-400" : "text-blue-500 dark:text-blue-400"}>{images.length}/4</span>
+                            <span className={images.length === maxImagesPerItem ? "text-red-500 dark:text-red-400" : "text-blue-500 dark:text-blue-400"}>{images.length}/{maxImagesPerItem}</span>
                         </div>
                         <div className="grid grid-cols-3 gap-2 max-h-32 overflow-y-auto p-1.5 bg-gray-50 dark:bg-gray-800/50 border border-gray-200 dark:border-gray-700 rounded-lg">
                             {images.map((img, idx) => (

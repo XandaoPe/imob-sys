@@ -25,6 +25,10 @@ export default function Dashboard() {
     const [isLoading, setIsLoading] = useState(false);
     const [processingMessage, setProcessingMessage] = useState<string | null>(null);
 
+    // Limites dinâmicos configurados do corretor
+    const [maxItems, setMaxItems] = useState<number>(10);
+    const [maxImagesPerItem, setMaxImagesPerItem] = useState<number>(4);
+
     // Estados do Perfil
     const [tenantName, setTenantName] = useState('');
     const [tenantEmail, setTenantEmail] = useState('');
@@ -83,6 +87,10 @@ export default function Dashboard() {
                 setTenantCity(data.city || '');
                 setTenantWebsiteLink(data.websiteLink || '');
                 setTenantBusinessCardLink(data.businessCardLink || '');
+
+                // Grava os limites vindos do banco de dados do cliente
+                if (data.maxItems !== undefined) setMaxItems(data.maxItems);
+                if (data.maxImagesPerItem !== undefined) setMaxImagesPerItem(data.maxImagesPerItem);
             }
         } catch (error) {
             console.error('Erro ao buscar dados do perfil:', error);
@@ -95,8 +103,8 @@ export default function Dashboard() {
 
         const isEditing = editingId !== null;
 
-        if (!isEditing && items.length >= 10) {
-            alert('Limite máximo atingido! Você só pode cadastrar até 10 registros.');
+        if (!isEditing && items.length >= maxItems) {
+            alert(`Limite máximo atingido! Seu plano permite cadastrar até ${maxItems} registros.`);
             return;
         }
 
@@ -126,7 +134,7 @@ export default function Dashboard() {
                 );
             } else {
                 const errData = await res.json().catch(() => ({}));
-                alert(errData.message || 'Ocorreu um erro ao tentar salvar o registro.');
+                alert(errData.error || errData.message || 'Ocorreu um erro ao tentar salvar o registro.');
             }
         } catch (error) {
             console.error('Erro ao salvar registro:', error);
@@ -192,7 +200,6 @@ export default function Dashboard() {
         setImages(item.images || []);
         setFileCountText(item.images && item.images.length > 0 ? `${item.images.length} foto(s) carregada(s)` : '');
 
-        // Rola suavemente até o formulário no topo (funciona perfeitamente no mobile)
         setTimeout(() => {
             const formElement = document.getElementById('item-form-container');
             if (formElement) {
@@ -267,7 +274,8 @@ export default function Dashboard() {
         setModalImageIndex(newIndex);
     };
 
-    const isLimitReached = !editingId && items.length >= 10;
+    // Verificação dinâmica baseada no limite individual do cliente
+    const isLimitReached = !editingId && items.length >= maxItems;
     const cleanPhone = tenantPhone.replace(/\D/g, '');
     const isMasterAdmin = ['18997901236', '18997261236', '5518997901236', '5518997261236'].includes(cleanPhone);
 
@@ -322,6 +330,8 @@ export default function Dashboard() {
                 <ItemForm
                     editingId={editingId}
                     isLimitReached={isLimitReached}
+                    maxItems={maxItems}
+                    maxImagesPerItem={maxImagesPerItem}
                     title={title}
                     setTitle={setTitle}
                     description={description}
@@ -349,8 +359,8 @@ export default function Dashboard() {
 
                     <div className="flex justify-between items-center mb-4">
                         <h2 className="text-xl font-semibold text-gray-900 dark:text-white">Meus Registros</h2>
-                        <span className={`text-xs font-bold px-2.5 py-1 rounded-md transition-colors ${items.length >= 10 ? 'bg-red-100 text-red-700 dark:bg-red-900/40 dark:text-red-400' : 'bg-blue-100 text-blue-700 dark:bg-blue-900/40 dark:text-blue-400'}`}>
-                            {items.length} / 10
+                        <span className={`text-xs font-bold px-2.5 py-1 rounded-md transition-colors ${items.length >= maxItems ? 'bg-amber-100 text-amber-800 dark:bg-amber-900/40 dark:text-amber-300' : 'bg-blue-100 text-blue-700 dark:bg-blue-900/40 dark:text-blue-400'}`}>
+                            {items.length} / {maxItems}
                         </span>
                     </div>
 

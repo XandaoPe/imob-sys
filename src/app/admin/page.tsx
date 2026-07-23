@@ -9,6 +9,8 @@ interface Corretor {
     phone: string;
     city?: string;
     createdAt: string;
+    maxItems?: number;
+    maxImagesPerItem?: number;
 }
 
 interface Registro {
@@ -35,6 +37,11 @@ export default function AdminMasterDashboard() {
     const [editTitle, setEditTitle] = useState('');
     const [editDescription, setEditDescription] = useState('');
 
+    // Estados para edição de LIMITES DO CORRETOR
+    const [editingTenantLimits, setEditingTenantLimits] = useState<Corretor | null>(null);
+    const [limitMaxItems, setLimitMaxItems] = useState<number>(10);
+    const [limitMaxImages, setLimitMaxImages] = useState<number>(4);
+
     const [loading, setLoading] = useState(true);
     const [errorMsg, setErrorMsg] = useState<string | null>(null);
     const router = useRouter();
@@ -54,7 +61,6 @@ export default function AdminMasterDashboard() {
         }
 
         try {
-            // Tenta buscar os dados da rota protegida. Se falhar, captura o erro de privilégios.
             const resItems = await fetch('/api/admin/items', {
                 headers: { Authorization: `Bearer ${token}` }
             });
@@ -77,6 +83,36 @@ export default function AdminMasterDashboard() {
             setErrorMsg(err.message || 'Você não tem permissão para visualizar esta página.');
         } finally {
             setLoading(false);
+        }
+    };
+
+    const handleSaveTenantLimits = async (e: React.FormEvent) => {
+        e.preventDefault();
+        if (!editingTenantLimits) return;
+
+        try {
+            const res = await fetch(`/api/admin/tenants?id=${editingTenantLimits._id}`, {
+                method: 'PUT',
+                headers: {
+                    'Content-Type': 'application/json',
+                    Authorization: `Bearer ${localStorage.getItem('token')}`
+                },
+                body: JSON.stringify({
+                    maxItems: limitMaxItems,
+                    maxImagesPerItem: limitMaxImages
+                })
+            });
+
+            if (res.ok) {
+                alert('Limites do corretor atualizados com sucesso!');
+                setEditingTenantLimits(null);
+                verificarAcessoEPuxarDados();
+            } else {
+                const errData = await res.json();
+                alert(errData.message || 'Erro ao atualizar limites.');
+            }
+        } catch (error) {
+            alert('Falha ao conectar ao servidor para alterar limites.');
         }
     };
 
@@ -128,7 +164,7 @@ export default function AdminMasterDashboard() {
                 body: JSON.stringify({
                     title: editTitle,
                     description: editDescription,
-                    images: editingItem.images // Mantém as imagens originais salvas
+                    images: editingItem.images
                 })
             });
 
@@ -173,6 +209,66 @@ export default function AdminMasterDashboard() {
 
     return (
         <div className="min-h-screen bg-gray-900 text-gray-100 p-6 font-sans">
+
+            {/* MODAL DE EDIÇÃO DE LIMITES DO CLIENTE */}
+            {editingTenantLimits && (
+                <div className="fixed inset-0 bg-black/80 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+                    <div className="bg-gray-800 border border-gray-700 rounded-2xl p-6 max-w-md w-full text-gray-100 relative shadow-2xl">
+                        <button
+                            onClick={() => setEditingTenantLimits(null)}
+                            className="absolute top-4 right-4 text-gray-400 hover:text-white text-2xl font-bold"
+                        >
+                            &times;
+                        </button>
+                        <h3 className="text-xl font-bold text-blue-400 mb-1">Ajustar Limites do Cliente</h3>
+                        <p className="text-xs text-gray-400 mb-4">Corretor: <strong className="text-gray-200">{editingTenantLimits.name}</strong></p>
+
+                        <form onSubmit={handleSaveTenantLimits} className="space-y-4">
+                            <div>
+                                <label className="block text-xs uppercase tracking-wider font-semibold text-gray-400 mb-1">
+                                    Limite de Imóveis (Registros)
+                                </label>
+                                <input
+                                    type="number"
+                                    min="1"
+                                    value={limitMaxItems}
+                                    onChange={(e) => setLimitMaxItems(Number(e.target.value))}
+                                    required
+                                    className="w-full bg-gray-900 border border-gray-700 rounded-lg p-2.5 text-sm text-white focus:outline-none focus:ring-2 focus:ring-blue-500"
+                                />
+                            </div>
+                            <div>
+                                <label className="block text-xs uppercase tracking-wider font-semibold text-gray-400 mb-1">
+                                    Limite de Fotos por Imóvel
+                                </label>
+                                <input
+                                    type="number"
+                                    min="1"
+                                    value={limitMaxImages}
+                                    onChange={(e) => setLimitMaxImages(Number(e.target.value))}
+                                    required
+                                    className="w-full bg-gray-900 border border-gray-700 rounded-lg p-2.5 text-sm text-white focus:outline-none focus:ring-2 focus:ring-blue-500"
+                                />
+                            </div>
+                            <div className="flex justify-end gap-2 pt-2">
+                                <button
+                                    type="button"
+                                    onClick={() => setEditingTenantLimits(null)}
+                                    className="bg-gray-700 text-gray-300 px-4 py-2 rounded-lg text-xs font-semibold hover:bg-gray-600 transition"
+                                >
+                                    Cancelar
+                                </button>
+                                <button
+                                    type="submit"
+                                    className="bg-blue-600 hover:bg-blue-500 text-white font-bold px-4 py-2 rounded-lg text-xs transition shadow-md"
+                                >
+                                    Salvar Novos Limites
+                                </button>
+                            </div>
+                        </form>
+                    </div>
+                </div>
+            )}
 
             {/* MODAL DE EDIÇÃO DE REGISTROS ALHEIOS */}
             {editingItem && (
@@ -283,7 +379,7 @@ export default function AdminMasterDashboard() {
                 </div>
             </section>
 
-            {/* TABELA / VISUALIZAÇÃO DOS IMÓVEIS */}
+            {/* TABELA / VISUALIZAÇÃO DOS IMÓVEIS OU CORRETORES */}
             <main className="max-w-7xl mx-auto bg-gray-800 border border-gray-700/60 rounded-xl overflow-hidden shadow-xl">
                 {activeTab === 'items' ? (
                     <div className="overflow-x-auto">
@@ -348,7 +444,7 @@ export default function AdminMasterDashboard() {
                         )}
                     </div>
                 ) : (
-                    /* TABELA DE CONTROLE DE CORRETORES (TENANTS) */
+                    /* TABELA DE CONTROLE DE CORRETORES (TENANTS) COM EXIBIÇÃO E EDICÃO DE LIMITES */
                     <div className="overflow-x-auto">
                         {tenants.length === 0 ? (
                             <p className="p-8 text-center text-sm text-gray-400">Nenhum corretor cadastrado na plataforma.</p>
@@ -358,7 +454,7 @@ export default function AdminMasterDashboard() {
                                     <tr className="bg-gray-900 border-b border-gray-700 text-xs font-semibold text-gray-400 uppercase tracking-wider">
                                         <th className="p-4">Nome do Corretor</th>
                                         <th className="p-4">Contato / E-mail</th>
-                                        <th className="p-4">Cidade Registrada</th>
+                                        <th className="p-4">Limites Atuais</th>
                                         <th className="p-4">Data Cadastro</th>
                                         <th className="p-4 text-right">Ações Críticas</th>
                                     </tr>
@@ -374,19 +470,37 @@ export default function AdminMasterDashboard() {
                                                 <p className="text-gray-200">{t.email}</p>
                                                 <p className="text-blue-400 mt-0.5">{t.phone}</p>
                                             </td>
-                                            <td className="p-4 text-gray-300">
-                                                {t.city || <span className="text-gray-600 text-xs italic">Não preenchido</span>}
+                                            <td className="p-4 text-xs font-mono">
+                                                <span className="bg-blue-900/40 text-blue-300 border border-blue-800 px-2 py-1 rounded inline-block mb-1">
+                                                    📌 Imóveis: <strong>{t.maxItems ?? 10}</strong>
+                                                </span>
+                                                <br />
+                                                <span className="bg-emerald-900/40 text-emerald-300 border border-emerald-800 px-2 py-1 rounded inline-block">
+                                                    🖼️ Fotos/Imóvel: <strong>{t.maxImagesPerItem ?? 4}</strong>
+                                                </span>
                                             </td>
                                             <td className="p-4 text-xs text-gray-400 font-mono">
                                                 {new Date(t.createdAt).toLocaleDateString('pt-BR')}
                                             </td>
                                             <td className="p-4 text-right whitespace-nowrap">
-                                                <button
-                                                    onClick={() => handleDeleteTenant(t._id)}
-                                                    className="bg-red-600 hover:bg-red-700 text-white px-3 py-1.5 rounded-lg text-xs font-bold transition shadow"
-                                                >
-                                                    Banir / Deletar Conta
-                                                </button>
+                                                <div className="inline-flex gap-2">
+                                                    <button
+                                                        onClick={() => {
+                                                            setEditingTenantLimits(t);
+                                                            setLimitMaxItems(t.maxItems ?? 10);
+                                                            setLimitMaxImages(t.maxImagesPerItem ?? 4);
+                                                        }}
+                                                        className="bg-blue-500/10 hover:bg-blue-600 text-blue-400 hover:text-white border border-blue-500/30 px-3 py-1.5 rounded-lg text-xs font-bold transition"
+                                                    >
+                                                        Ajustar Limites
+                                                    </button>
+                                                    <button
+                                                        onClick={() => handleDeleteTenant(t._id)}
+                                                        className="bg-red-600 hover:bg-red-700 text-white px-3 py-1.5 rounded-lg text-xs font-bold transition shadow"
+                                                    >
+                                                        Banir / Deletar
+                                                    </button>
+                                                </div>
                                             </td>
                                         </tr>
                                     ))}

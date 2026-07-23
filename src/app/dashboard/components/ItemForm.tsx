@@ -160,7 +160,7 @@ export default function ItemForm({
                         <span className="text-base leading-none">💡</span>
                         <div>
                             <strong className="block font-bold text-amber-900 dark:text-amber-100 mb-0.5">Limite de registros atingido!</strong>
-                            Você alcançou o limite máximo de <strong>{maxItems}</strong> imóveis no seu plano. Para cadastrar um novo imóvel, por favor, <strong>exclua um registro existente</strong> ou entre em contato com o suporte para expandir seu plano.
+                            Você alcançou o limite máximo de <strong>{maxItems}</strong> registros no seu plano. Para cadastrar um novo registro, por favor, <strong>exclua um registro existente</strong> ou entre em contato com o suporte para expandir seu plano.
                         </div>
                     </div>
                 </div>
@@ -204,7 +204,7 @@ export default function ItemForm({
                 <div>
                     <label className="flex items-center text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
                         <span>Imagens do Registro</span>
-                        <InfoTooltip text={`Envie até ${maxImagesPerItem} fotos do imóvel/produto. Elas serão otimizadas automaticamente para carregar rápido no celular do cliente.`} />
+                        <InfoTooltip text={`Envie até ${maxImagesPerItem} fotos do registro/produto. Elas serão otimizadas automaticamente para carregar rápido no celular do cliente.`} />
                     </label>
                     <label className={`flex flex-col items-center justify-center w-full h-24 border-2 border-dashed rounded-lg transition p-2 text-center ${images.length >= maxImagesPerItem || isLimitReached ? 'border-gray-200 dark:border-gray-800 bg-gray-100 dark:bg-gray-800/50 cursor-not-allowed opacity-70' : 'border-gray-300 dark:border-gray-700 bg-gray-50 dark:bg-gray-800 hover:bg-gray-100 dark:hover:bg-gray-700/80 cursor-pointer'}`}>
                         <svg className="w-6 h-6 mb-1 text-gray-500 dark:text-gray-400" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"></path></svg>

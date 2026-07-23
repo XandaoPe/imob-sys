@@ -36,7 +36,7 @@ export async function GET(request: Request) {
         const tenants = await Tenant.find().select('-passwordHash').sort({ createdAt: -1 });
         return NextResponse.json(tenants, { status: 200 });
     } catch (error) {
-        return NextResponse.json({ message: "Erro ao buscar corretores." }, { status: 500 });
+        return NextResponse.json({ message: "Erro ao buscar clientes." }, { status: 500 });
     }
 }
 
@@ -50,7 +50,7 @@ export async function PUT(request: Request) {
     try {
         const { searchParams } = new URL(request.url);
         const id = searchParams.get('id');
-        if (!id) return NextResponse.json({ message: "ID do corretor não fornecido." }, { status: 400 });
+        if (!id) return NextResponse.json({ message: "ID do cliente não fornecido." }, { status: 400 });
 
         const body = await request.json();
         const { maxItems, maxImagesPerItem } = body;
@@ -68,7 +68,7 @@ export async function PUT(request: Request) {
 
         return NextResponse.json(updatedTenant, { status: 200 });
     } catch (error) {
-        return NextResponse.json({ message: "Erro ao atualizar limites do corretor." }, { status: 500 });
+        return NextResponse.json({ message: "Erro ao atualizar limites do cliente." }, { status: 500 });
     }
 }
 
@@ -81,14 +81,14 @@ export async function DELETE(request: Request) {
     try {
         const { searchParams } = new URL(request.url);
         const id = searchParams.get('id');
-        if (!id) return NextResponse.json({ message: "ID do corretor não fornecido." }, { status: 400 });
+        if (!id) return NextResponse.json({ message: "ID do cliente não fornecido." }, { status: 400 });
 
         await dbConnect();
         await Item.deleteMany({ tenantId: id });
         await Tenant.findByIdAndDelete(id);
 
-        return NextResponse.json({ message: "Corretor e registros dependentes excluídos com sucesso." }, { status: 200 });
+        return NextResponse.json({ message: "Cliente e registros dependentes excluídos com sucesso." }, { status: 200 });
     } catch (error) {
-        return NextResponse.json({ message: "Erro ao excluir conta de corretor." }, { status: 500 });
+        return NextResponse.json({ message: "Erro ao excluir conta de cliente." }, { status: 500 });
     }
 }

@@ -40,7 +40,7 @@ export async function PUT(req: Request, { params }: { params: Promise<{ id: stri
 
         if (images && images.length > maxImagesPerItem) {
             return NextResponse.json(
-                { error: `Seu plano permite no máximo ${maxImagesPerItem} imagens por imóvel.` },
+                { error: `Seu plano permite no máximo ${maxImagesPerItem} imagens por registro.` },
                 { status: 400 }
             );
         }

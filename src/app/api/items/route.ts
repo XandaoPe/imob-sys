@@ -32,7 +32,7 @@ export async function POST(req: Request) {
         const currentItemsCount = await Item.countDocuments({ tenantId });
         if (currentItemsCount >= maxItems) {
             return NextResponse.json(
-                { error: `Você atingiu o seu limite de ${maxItems} imóveis cadastrados. Entre em contato com o suporte para expandir seu plano.` },
+                { error: `Você atingiu o seu limite de ${maxItems} registros cadastrados. Entre em contato com o suporte para expandir seu plano.` },
                 { status: 400 }
             );
         }
@@ -43,7 +43,7 @@ export async function POST(req: Request) {
         // 2. Valida o limite de imagens enviadas
         if (imageList.length > maxImagesPerItem) {
             return NextResponse.json(
-                { error: `Seu plano permite no máximo ${maxImagesPerItem} imagens por imóvel.` },
+                { error: `Seu plano permite no máximo ${maxImagesPerItem} imagens por registro.` },
                 { status: 400 }
             );
         }

@@ -104,7 +104,7 @@ export default function AdminMasterDashboard() {
             });
 
             if (res.ok) {
-                alert('Limites do corretor atualizados com sucesso!');
+                alert('Limites do cliente atualizados com sucesso!');
                 setEditingTenantLimits(null);
                 verificarAcessoEPuxarDados();
             } else {
@@ -134,7 +134,7 @@ export default function AdminMasterDashboard() {
     };
 
     const handleDeleteTenant = async (id: string) => {
-        if (!confirm('ATENÇÃO CRÍTICA:\n\nExcluir este corretor removerá sua conta e TODOS os imóveis cadastrados por ele automaticamente.\nDeseja prosseguir?')) return;
+        if (!confirm('ATENÇÃO CRÍTICA:\n\nExcluir este cliente removerá sua conta e TODOS os registros cadastrados por ele automaticamente.\nDeseja prosseguir?')) return;
 
         try {
             const res = await fetch(`/api/admin/tenants?id=${id}`, {
@@ -142,11 +142,11 @@ export default function AdminMasterDashboard() {
                 headers: { Authorization: `Bearer ${localStorage.getItem('token')}` }
             });
             if (res.ok) {
-                alert('Corretor e banco de dados dependente eliminados!');
+                alert('Cliente e banco de dados dependente eliminados!');
                 verificarAcessoEPuxarDados();
             }
         } catch (error) {
-            alert('Falha ao deletar corretor.');
+            alert('Falha ao deletar cliente.');
         }
     };
 
@@ -221,12 +221,12 @@ export default function AdminMasterDashboard() {
                             &times;
                         </button>
                         <h3 className="text-xl font-bold text-blue-400 mb-1">Ajustar Limites do Cliente</h3>
-                        <p className="text-xs text-gray-400 mb-4">Corretor: <strong className="text-gray-200">{editingTenantLimits.name}</strong></p>
+                        <p className="text-xs text-gray-400 mb-4">Cliente: <strong className="text-gray-200">{editingTenantLimits.name}</strong></p>
 
                         <form onSubmit={handleSaveTenantLimits} className="space-y-4">
                             <div>
                                 <label className="block text-xs uppercase tracking-wider font-semibold text-gray-400 mb-1">
-                                    Limite de Imóveis (Registros)
+                                    Limite de Registros
                                 </label>
                                 <input
                                     type="number"
@@ -239,7 +239,7 @@ export default function AdminMasterDashboard() {
                             </div>
                             <div>
                                 <label className="block text-xs uppercase tracking-wider font-semibold text-gray-400 mb-1">
-                                    Limite de Fotos por Imóvel
+                                    Limite de Fotos por Registro
                                 </label>
                                 <input
                                     type="number"
@@ -281,7 +281,7 @@ export default function AdminMasterDashboard() {
                             &times;
                         </button>
                         <h3 className="text-xl font-bold text-amber-400 mb-2">Modo Admin: Forçar Edição</h3>
-                        <p className="text-xs text-gray-400 mb-4">Pertence ao corretor: <strong className="text-gray-200">{editingItem.corretor.name}</strong> ({editingItem.corretor.email})</p>
+                        <p className="text-xs text-gray-400 mb-4">Pertence ao cliente: <strong className="text-gray-200">{editingItem.corretor.name}</strong> ({editingItem.corretor.email})</p>
 
                         <form onSubmit={handleSaveEditItem} className="space-y-4">
                             <div>
@@ -345,11 +345,11 @@ export default function AdminMasterDashboard() {
             {/* SUMÁRIO E CARDS DE METRICA */}
             <section className="max-w-7xl mx-auto grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4 mb-8">
                 <div className="bg-gray-800/40 border border-gray-800 p-5 rounded-xl">
-                    <p className="text-xs font-semibold text-gray-400 uppercase tracking-wider">Total de Corretores</p>
+                    <p className="text-xs font-semibold text-gray-400 uppercase tracking-wider">Total de Clientes</p>
                     <p className="text-3xl font-black text-blue-400 mt-1">{tenants.length}</p>
                 </div>
                 <div className="bg-gray-800/40 border border-gray-800 p-5 rounded-xl">
-                    <p className="text-xs font-semibold text-gray-400 uppercase tracking-wider">Total de Imóveis no Banco</p>
+                    <p className="text-xs font-semibold text-gray-400 uppercase tracking-wider">Total de Registros no Banco</p>
                     <p className="text-3xl font-black text-green-400 mt-1">{items.length}</p>
                 </div>
                 <div className="bg-gray-800/40 border border-gray-800 p-5 rounded-xl sm:col-span-2 md:col-span-1">
@@ -368,30 +368,30 @@ export default function AdminMasterDashboard() {
                         onClick={() => setActiveTab('items')}
                         className={`px-5 py-3 text-sm font-bold border-b-2 transition ${activeTab === 'items' ? 'border-blue-500 text-blue-400 bg-gray-800/30' : 'border-transparent text-gray-400 hover:text-gray-200'}`}
                     >
-                        Todos os Imóveis Cadastrados ({items.length})
+                        Todos os Registros Cadastrados ({items.length})
                     </button>
                     <button
                         onClick={() => setActiveTab('tenants')}
                         className={`px-5 py-3 text-sm font-bold border-b-2 transition ${activeTab === 'tenants' ? 'border-blue-500 text-blue-400 bg-gray-800/30' : 'border-transparent text-gray-400 hover:text-gray-200'}`}
                     >
-                        Lista de Corretores ({tenants.length})
+                        Lista de Clientes ({tenants.length})
                     </button>
                 </div>
             </section>
 
-            {/* TABELA / VISUALIZAÇÃO DOS IMÓVEIS OU CORRETORES */}
+            {/* TABELA / VISUALIZAÇÃO DOS REGISTROS OU CLIENTES */}
             <main className="max-w-7xl mx-auto bg-gray-800 border border-gray-700/60 rounded-xl overflow-hidden shadow-xl">
                 {activeTab === 'items' ? (
                     <div className="overflow-x-auto">
                         {items.length === 0 ? (
-                            <p className="p-8 text-center text-sm text-gray-400">Nenhum imóvel foi postado em nenhuma conta do sistema.</p>
+                            <p className="p-8 text-center text-sm text-gray-400">Nenhum registro foi postado em nenhuma conta do sistema.</p>
                         ) : (
                             <table className="w-full text-left border-collapse">
                                 <thead>
                                     <tr className="bg-gray-900 border-b border-gray-700 text-xs font-semibold text-gray-400 uppercase tracking-wider">
                                         <th className="p-4">Capa</th>
-                                        <th className="p-4">Dados do Imóvel</th>
-                                        <th className="p-4">Corretor Responsável</th>
+                                        <th className="p-4">Dados do Registro</th>
+                                        <th className="p-4">Cliente Responsável</th>
                                         <th className="p-4 text-right">Ações de Controle</th>
                                     </tr>
                                 </thead>
@@ -447,12 +447,12 @@ export default function AdminMasterDashboard() {
                     /* TABELA DE CONTROLE DE CORRETORES (TENANTS) COM EXIBIÇÃO E EDICÃO DE LIMITES */
                     <div className="overflow-x-auto">
                         {tenants.length === 0 ? (
-                            <p className="p-8 text-center text-sm text-gray-400">Nenhum corretor cadastrado na plataforma.</p>
+                            <p className="p-8 text-center text-sm text-gray-400">Nenhum cliente cadastrado na plataforma.</p>
                         ) : (
                             <table className="w-full text-left border-collapse">
                                 <thead>
                                     <tr className="bg-gray-900 border-b border-gray-700 text-xs font-semibold text-gray-400 uppercase tracking-wider">
-                                        <th className="p-4">Nome do Corretor</th>
+                                        <th className="p-4">Nome do Cliente</th>
                                         <th className="p-4">Contato / E-mail</th>
                                         <th className="p-4">Limites Atuais</th>
                                         <th className="p-4">Data Cadastro</th>
@@ -472,11 +472,11 @@ export default function AdminMasterDashboard() {
                                             </td>
                                             <td className="p-4 text-xs font-mono">
                                                 <span className="bg-blue-900/40 text-blue-300 border border-blue-800 px-2 py-1 rounded inline-block mb-1">
-                                                    📌 Imóveis: <strong>{t.maxItems ?? 10}</strong>
+                                                    📌 Registro: <strong>{t.maxItems ?? 10}</strong>
                                                 </span>
                                                 <br />
                                                 <span className="bg-emerald-900/40 text-emerald-300 border border-emerald-800 px-2 py-1 rounded inline-block">
-                                                    🖼️ Fotos/Imóvel: <strong>{t.maxImagesPerItem ?? 4}</strong>
+                                                    🖼️ Fotos/Registro: <strong>{t.maxImagesPerItem ?? 4}</strong>
                                                 </span>
                                             </td>
                                             <td className="p-4 text-xs text-gray-400 font-mono">

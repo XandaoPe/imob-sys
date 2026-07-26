@@ -5,6 +5,20 @@ import React, { useState } from 'react';
 export const InfoTooltip = ({ text }: { text: string }) => {
     const [isOpen, setIsOpen] = useState(false);
 
+    // Ativa o hover apenas em telas/dispositivos com mouse (Notebook/PC)
+    const handleMouseEnter = () => {
+        if (typeof window !== 'undefined' && window.matchMedia('(hover: hover)').matches) {
+            setIsOpen(true);
+        }
+    };
+
+    // Desativa o hover apenas em telas/dispositivos com mouse (Notebook/PC)
+    const handleMouseLeave = () => {
+        if (typeof window !== 'undefined' && window.matchMedia('(hover: hover)').matches) {
+            setIsOpen(false);
+        }
+    };
+
     return (
         <div className="relative inline-flex items-center ml-1">
             <button
@@ -13,7 +27,9 @@ export const InfoTooltip = ({ text }: { text: string }) => {
                     e.preventDefault();
                     setIsOpen((prev) => !prev);
                 }}
-                onBlur={() => setIsOpen(false)}
+                onMouseEnter={handleMouseEnter}
+                onMouseLeave={handleMouseLeave}
+                onBlur={() => setIsOpen(false)} // Fecha o balão ao clicar fora
                 className="w-4 h-4 rounded-full bg-gray-200 dark:bg-gray-700 hover:bg-blue-600 dark:hover:bg-blue-500 hover:text-white dark:hover:text-white text-gray-600 dark:text-gray-300 font-bold text-[11px] flex items-center justify-center transition-colors cursor-help select-none focus:outline-none"
                 aria-label="Mais informações"
             >

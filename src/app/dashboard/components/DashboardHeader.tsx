@@ -6,10 +6,11 @@ import { useRouter } from 'next/navigation';
 interface DashboardHeaderProps {
     isMasterAdmin: boolean;
     tenantName?: string; // Propriedade adicionada
+    tenantCity?: string; // Propriedade adicionada
     onOpenProfile: () => void;
 }
 
-export default function DashboardHeader({ isMasterAdmin, tenantName, onOpenProfile }: DashboardHeaderProps) {
+export default function DashboardHeader({ isMasterAdmin, tenantName, tenantCity, onOpenProfile }: DashboardHeaderProps) {
     const router = useRouter();
 
     return (
@@ -18,10 +19,10 @@ export default function DashboardHeader({ isMasterAdmin, tenantName, onOpenProfi
                 <h1 className="text-2xl sm:text-3xl font-bold tracking-tight text-gray-900 dark:text-white">
                     Painel de Controle
                 </h1>
-                {/* Nome do usuário exibido dinamicamente */}
+                {/* Nome do usuário e cidade exibidos dinamicamente */}
                 {tenantName && (
                     <p className="text-xs sm:text-sm font-semibold text-amber-600 dark:text-amber-400 mt-0.5">
-                        {tenantName}
+                        {tenantName} {tenantCity ? `• ${tenantCity}` : ''}
                     </p>
                 )}
             </div>

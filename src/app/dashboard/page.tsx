@@ -382,6 +382,7 @@ export default function Dashboard() {
             <DashboardHeader
                 isMasterAdmin={isMasterAdmin}
                 tenantName={tenantName}
+                tenantCity={tenantCity}
                 onOpenProfile={() => setIsProfileModalOpen(true)}
             />
 

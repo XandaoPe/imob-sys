@@ -321,6 +321,7 @@ export default function Dashboard() {
             {/* 4. CABEÇALHO */}
             <DashboardHeader
                 isMasterAdmin={isMasterAdmin}
+                tenantName={tenantName}
                 onOpenProfile={() => setIsProfileModalOpen(true)}
             />
 

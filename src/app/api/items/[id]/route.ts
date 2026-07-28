@@ -36,7 +36,7 @@ export async function PUT(req: Request, { params }: { params: Promise<{ id: stri
         const resolvedParams = await params;
         const itemId = resolvedParams.id;
 
-        const { title, description, images } = await req.json();
+        const { title, description, images, expiresAt, isActive } = await req.json();
 
         if (images && images.length > maxImagesPerItem) {
             return NextResponse.json(
@@ -45,10 +45,25 @@ export async function PUT(req: Request, { params }: { params: Promise<{ id: stri
             );
         }
 
-        const updateData: any = { title, description };
-        if (images) {
-            updateData.images = images;
+        // Validação de Reativação
+        if (isActive && expiresAt) {
+            const expDate = new Date(expiresAt);
+            const now = new Date();
+            // Reseta horário para comparar apenas a data
+            now.setHours(0, 0, 0, 0);
+
+            if (expDate < now) {
+                return NextResponse.json(
+                    { error: 'Para reativar o anúncio, informe uma nova data de validade válida.' },
+                    { status: 400 }
+                );
+            }
         }
+
+        const updateData: any = { title, description };
+        if (images) updateData.images = images;
+        if (expiresAt) updateData.expiresAt = new Date(expiresAt);
+        if (typeof isActive === 'boolean') updateData.isActive = isActive;
 
         const updatedItem = await Item.findOneAndUpdate(
             { _id: itemId, tenantId },

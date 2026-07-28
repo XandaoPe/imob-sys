@@ -1,7 +1,7 @@
 import { NextResponse } from 'next/server';
 import connectDB from '@/lib/mongodb';
-import Tenant from '@/models/Tenant';
 import Item from '@/models/Item';
+import Tenant from '@/models/Tenant';
 
 export async function GET(req: Request, { params }: { params: Promise<{ id: string }> }) {
     try {
@@ -9,20 +9,28 @@ export async function GET(req: Request, { params }: { params: Promise<{ id: stri
         const resolvedParams = await params;
         const tenantId = resolvedParams.id;
 
-        // Selecionando o websiteLink do Tenant
-        const tenant = await Tenant.findById(tenantId).select('name phone websiteLink businessCardLink');
-        if (!tenant) return NextResponse.json({ error: 'Página não encontrada' }, { status: 404 });
+        const tenant = await Tenant.findById(tenantId);
+        if (!tenant) {
+            return NextResponse.json({ error: 'Tenant não encontrado' }, { status: 404 });
+        }
 
-        const items = await Item.find({ tenantId }).select('title description images');
+        const now = new Date();
+
+        // Filtra apenas anúncios ativos E cuja validade seja igual ou posterior à data atual
+        const items = await Item.find({
+            tenantId,
+            isActive: true,
+            expiresAt: { $gte: now }
+        }).sort({ createdAt: -1 });
 
         return NextResponse.json({
             tenantName: tenant.name,
             tenantPhone: tenant.phone,
-            websiteLink: tenant.websiteLink || '', // <-- RETORNO DO CAMPO
-            businessCardLink: tenant.businessCardLink || '',
+            websiteLink: tenant.websiteLink,
+            businessCardLink: tenant.businessCardLink,
             items
         });
-    } catch (error) {
-        return NextResponse.json({ error: 'Página não encontrada' }, { status: 404 });
+    } catch (error: any) {
+        return NextResponse.json({ error: error.message }, { status: 500 });
     }
 }

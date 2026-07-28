@@ -3,4 +3,6 @@ export interface Item {
     title: string;
     description: string;
     images?: string[];
+    expiresAt?: string;
+    isActive?: boolean;
 }

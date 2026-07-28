@@ -4,7 +4,7 @@ import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { Item } from './types';
 
-// Importações dos novos subcomponentes modulares
+// Importações dos subcomponentes modulares
 import Toast from './components/Toast';
 import FullImageModal from './components/FullImageModal';
 import ProfileModal from './components/ProfileModal';
@@ -18,6 +18,11 @@ export default function Dashboard() {
     const [title, setTitle] = useState('');
     const [description, setDescription] = useState('');
     const [images, setImages] = useState<string[]>([]);
+
+    // Estados necessários pelo ItemForm
+    const [expiresAt, setExpiresAt] = useState('');
+    const [isActive, setIsActive] = useState(true);
+
     const [fileCountText, setFileCountText] = useState('');
     const [shareLink, setShareLink] = useState('');
     const [copied, setCopied] = useState(false);
@@ -28,6 +33,9 @@ export default function Dashboard() {
     // Limites dinâmicos configurados do corretor
     const [maxItems, setMaxItems] = useState<number>(10);
     const [maxImagesPerItem, setMaxImagesPerItem] = useState<number>(4);
+
+    // Estado da Validade/Expiração da conta/plano
+    const [tenantExpirationDate, setTenantExpirationDate] = useState<string | null>(null);
 
     // Estados do Perfil
     const [tenantName, setTenantName] = useState('');
@@ -88,6 +96,11 @@ export default function Dashboard() {
                 setTenantWebsiteLink(data.websiteLink || '');
                 setTenantBusinessCardLink(data.businessCardLink || '');
 
+                // Grava a data de validade/expiração do cadastro se existir
+                if (data.expirationDate || data.validity) {
+                    setTenantExpirationDate(data.expirationDate || data.validity);
+                }
+
                 // Grava os limites vindos do banco de dados do cliente
                 if (data.maxItems !== undefined) setMaxItems(data.maxItems);
                 if (data.maxImagesPerItem !== undefined) setMaxImagesPerItem(data.maxImagesPerItem);
@@ -97,9 +110,19 @@ export default function Dashboard() {
         }
     };
 
+    // Verificação se o plano está expirado
+    const isPlanExpired = tenantExpirationDate
+        ? new Date(tenantExpirationDate) < new Date()
+        : false;
+
     const handleSaveOrUpdate = async (e: React.FormEvent) => {
         e.preventDefault();
         if (isLoading) return;
+
+        if (isPlanExpired) {
+            alert('Sua assinatura / acesso está expirado. Por favor, entre em contato para renovar seu plano.');
+            return;
+        }
 
         const isEditing = editingId !== null;
 
@@ -121,7 +144,13 @@ export default function Dashboard() {
                     'Content-Type': 'application/json',
                     Authorization: `Bearer ${localStorage.getItem('token')}`,
                 },
-                body: JSON.stringify({ title, description, images }),
+                body: JSON.stringify({
+                    title,
+                    description,
+                    images,
+                    expiresAt,
+                    isActive
+                }),
             });
 
             if (res.ok) {
@@ -193,11 +222,35 @@ export default function Dashboard() {
         }
     };
 
+    // Função auxiliar para formatar qualquer tipo de data para 'YYYY-MM-DD'
+    const formatDateForInput = (dateVal?: string | Date) => {
+        if (!dateVal) return '';
+        const str = String(dateVal);
+
+        // Se já for ISO string (ex: "2027-07-28T00:00:00.000Z")
+        if (str.includes('T')) return str.split('T')[0];
+
+        // Se estiver no formato DD/MM/YYYY
+        if (str.includes('/')) {
+            const parts = str.split('/');
+            if (parts.length === 3) {
+                return `${parts[2]}-${parts[1].padStart(2, '0')}-${parts[0].padStart(2, '0')}`;
+            }
+        }
+
+        return str.substring(0, 10);
+    };
+
     const startEdit = (item: Item) => {
         setEditingId(item._id);
         setTitle(item.title);
         setDescription(item.description);
         setImages(item.images || []);
+
+        // Formata a data de expiração para YYYY-MM-DD
+        setExpiresAt(formatDateForInput(item.expiresAt));
+
+        setIsActive(item.isActive !== undefined ? item.isActive : true);
         setFileCountText(item.images && item.images.length > 0 ? `${item.images.length} foto(s) carregada(s)` : '');
 
         setTimeout(() => {
@@ -215,6 +268,8 @@ export default function Dashboard() {
         setTitle('');
         setDescription('');
         setImages([]);
+        setExpiresAt('');
+        setIsActive(true);
         setFileCountText('');
     };
 
@@ -279,6 +334,11 @@ export default function Dashboard() {
     const cleanPhone = tenantPhone.replace(/\D/g, '');
     const isMasterAdmin = ['18997901236', '18997261236', '5518997901236', '5518997261236'].includes(cleanPhone);
 
+    // Formatação amigável da data de validade para exibição
+    const formattedExpirationDate = tenantExpirationDate
+        ? new Date(tenantExpirationDate).toLocaleDateString('pt-BR')
+        : null;
+
     return (
         <div className="min-h-screen bg-gray-50 dark:bg-gray-950 p-6 text-gray-800 dark:text-gray-100 relative transition-colors duration-200">
 
@@ -325,18 +385,41 @@ export default function Dashboard() {
                 onOpenProfile={() => setIsProfileModalOpen(true)}
             />
 
+            {/* ALERTA DE VALIDADE/EXPIRAÇÃO DO PLANO */}
+            {tenantExpirationDate && (
+                <div className={`max-w-5xl mx-auto mb-6 p-4 rounded-xl border text-sm flex items-center justify-between ${isPlanExpired
+                    ? 'bg-red-50 border-red-200 text-red-800 dark:bg-red-950/40 dark:border-red-800 dark:text-red-300'
+                    : 'bg-emerald-50 border-emerald-200 text-emerald-800 dark:bg-emerald-950/40 dark:border-emerald-800 dark:text-emerald-300'
+                    }`}>
+                    <div className="flex items-center gap-2">
+                        <span className="font-semibold">
+                            {isPlanExpired ? '⚠️ Acesso Expirado:' : '📅 Validade da Assinatura:'}
+                        </span>
+                        <span>
+                            {isPlanExpired
+                                ? `Seu plano venceu em ${formattedExpirationDate}. A criação e edição de registros estão bloqueadas.`
+                                : `Sua conta está ativa até ${formattedExpirationDate}.`}
+                        </span>
+                    </div>
+                </div>
+            )}
+
             <main className="max-w-5xl mx-auto grid grid-cols-1 md:grid-cols-3 gap-8">
 
                 {/* 5. FORMULÁRIO LATERAL DE CRIAÇÃO/EDIÇÃO */}
                 <ItemForm
                     editingId={editingId}
-                    isLimitReached={isLimitReached}
+                    isLimitReached={isLimitReached || isPlanExpired}
                     maxItems={maxItems}
                     maxImagesPerItem={maxImagesPerItem}
                     title={title}
                     setTitle={setTitle}
                     description={description}
                     setDescription={setDescription}
+                    expiresAt={expiresAt}
+                    setExpiresAt={setExpiresAt}
+                    isActive={isActive}
+                    setIsActive={setIsActive}
                     images={images}
                     setImages={setImages}
                     fileCountText={fileCountText}

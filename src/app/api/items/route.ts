@@ -23,12 +23,10 @@ export async function POST(req: Request) {
         const tenantId = verifyToken(req);
         if (!tenantId) return NextResponse.json({ error: 'Não autorizado' }, { status: 401 });
 
-        // Busca as configurações de limite do tenant (com fallback padrão de 10 e 4)
         const tenant = await Tenant.findById(tenantId);
         const maxItems = tenant?.maxItems ?? 10;
         const maxImagesPerItem = tenant?.maxImagesPerItem ?? 4;
 
-        // 1. Valida se o cliente já atingiu o limite máximo de registros
         const currentItemsCount = await Item.countDocuments({ tenantId });
         if (currentItemsCount >= maxItems) {
             return NextResponse.json(
@@ -37,10 +35,13 @@ export async function POST(req: Request) {
             );
         }
 
-        const { title, description, images } = await req.json();
+        const { title, description, images, expiresAt, isActive } = await req.json();
         const imageList = images || [];
 
-        // 2. Valida o limite de imagens enviadas
+        if (!expiresAt) {
+            return NextResponse.json({ error: 'A data de validade é obrigatória.' }, { status: 400 });
+        }
+
         if (imageList.length > maxImagesPerItem) {
             return NextResponse.json(
                 { error: `Seu plano permite no máximo ${maxImagesPerItem} imagens por registro.` },
@@ -53,6 +54,8 @@ export async function POST(req: Request) {
             title,
             description,
             images: imageList,
+            expiresAt: new Date(expiresAt),
+            isActive: isActive !== undefined ? isActive : true,
         });
 
         return NextResponse.json(newItem, { status: 201 });

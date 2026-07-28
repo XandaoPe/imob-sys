@@ -6,8 +6,8 @@ import { ThemeProvider } from '@/context/ThemeContext';
 const inter = Inter({ subsets: ['latin'] });
 
 export const metadata: Metadata = {
-  title: 'Sistema Imobiliário',
-  description: 'Painel de Gestão e Anúncios',
+  title: 'Catálogo de Ofertas',
+  description: 'Painel Interações e Anúncios',
 };
 
 export default function RootLayout({

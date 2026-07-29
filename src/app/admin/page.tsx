@@ -11,6 +11,7 @@ interface Corretor {
     createdAt: string;
     maxItems?: number;
     maxImagesPerItem?: number;
+    subscriptionExpiresAt?: string;
 }
 
 interface Registro {
@@ -32,15 +33,14 @@ export default function AdminMasterDashboard() {
     const [items, setItems] = useState<Registro[]>([]);
     const [activeTab, setActiveTab] = useState<'items' | 'tenants'>('items');
 
-    // Estados para edição rápida de registros pelo Admin
     const [editingItem, setEditingItem] = useState<Registro | null>(null);
     const [editTitle, setEditTitle] = useState('');
     const [editDescription, setEditDescription] = useState('');
 
-    // Estados para edição de LIMITES DO CORRETOR
     const [editingTenantLimits, setEditingTenantLimits] = useState<Corretor | null>(null);
     const [limitMaxItems, setLimitMaxItems] = useState<number>(10);
     const [limitMaxImages, setLimitMaxImages] = useState<number>(4);
+    const [limitSubscriptionExpiresAt, setLimitSubscriptionExpiresAt] = useState<string>('');
 
     const [loading, setLoading] = useState(true);
     const [errorMsg, setErrorMsg] = useState<string | null>(null);
@@ -99,20 +99,21 @@ export default function AdminMasterDashboard() {
                 },
                 body: JSON.stringify({
                     maxItems: limitMaxItems,
-                    maxImagesPerItem: limitMaxImages
+                    maxImagesPerItem: limitMaxImages,
+                    subscriptionExpiresAt: limitSubscriptionExpiresAt
                 })
             });
 
             if (res.ok) {
-                alert('Limites do cliente atualizados com sucesso!');
+                alert('Limites e validade atualizados com sucesso!');
                 setEditingTenantLimits(null);
                 verificarAcessoEPuxarDados();
             } else {
                 const errData = await res.json();
-                alert(errData.message || 'Erro ao atualizar limites.');
+                alert(errData.message || 'Erro ao atualizar dados.');
             }
         } catch (error) {
-            alert('Falha ao conectar ao servidor para alterar limites.');
+            alert('Falha ao conectar ao servidor para alterar permissões.');
         }
     };
 
@@ -209,8 +210,6 @@ export default function AdminMasterDashboard() {
 
     return (
         <div className="min-h-screen bg-gray-900 text-gray-100 p-6 font-sans">
-
-            {/* MODAL DE EDIÇÃO DE LIMITES DO CLIENTE */}
             {editingTenantLimits && (
                 <div className="fixed inset-0 bg-black/80 backdrop-blur-sm z-50 flex items-center justify-center p-4">
                     <div className="bg-gray-800 border border-gray-700 rounded-2xl p-6 max-w-md w-full text-gray-100 relative shadow-2xl">
@@ -250,6 +249,18 @@ export default function AdminMasterDashboard() {
                                     className="w-full bg-gray-900 border border-gray-700 rounded-lg p-2.5 text-sm text-white focus:outline-none focus:ring-2 focus:ring-blue-500"
                                 />
                             </div>
+                            <div>
+                                <label className="block text-xs uppercase tracking-wider font-semibold text-gray-400 mb-1">
+                                    Data de Vencimento da Anuidade
+                                </label>
+                                <input
+                                    type="date"
+                                    value={limitSubscriptionExpiresAt}
+                                    onChange={(e) => setLimitSubscriptionExpiresAt(e.target.value)}
+                                    required
+                                    className="w-full bg-gray-900 border border-gray-700 rounded-lg p-2.5 text-sm text-white focus:outline-none focus:ring-2 focus:ring-blue-500"
+                                />
+                            </div>
                             <div className="flex justify-end gap-2 pt-2">
                                 <button
                                     type="button"
@@ -270,7 +281,6 @@ export default function AdminMasterDashboard() {
                 </div>
             )}
 
-            {/* MODAL DE EDIÇÃO DE REGISTROS ALHEIOS */}
             {editingItem && (
                 <div className="fixed inset-0 bg-black/80 backdrop-blur-sm z-50 flex items-center justify-center p-4">
                     <div className="bg-gray-800 border border-gray-700 rounded-2xl p-6 max-w-xl w-full text-gray-100 relative shadow-2xl">
@@ -323,7 +333,6 @@ export default function AdminMasterDashboard() {
                 </div>
             )}
 
-            {/* TOPO DO PAINEL MASTER */}
             <header className="max-w-7xl mx-auto border-b border-gray-800 pb-6 mb-8 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
                 <div>
                     <div className="flex items-center gap-2 mb-1">
@@ -342,7 +351,6 @@ export default function AdminMasterDashboard() {
                 </button>
             </header>
 
-            {/* SUMÁRIO E CARDS DE METRICA */}
             <section className="max-w-7xl mx-auto grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4 mb-8">
                 <div className="bg-gray-800/40 border border-gray-800 p-5 rounded-xl">
                     <p className="text-xs font-semibold text-gray-400 uppercase tracking-wider">Total de Clientes</p>
@@ -361,7 +369,6 @@ export default function AdminMasterDashboard() {
                 </div>
             </section>
 
-            {/* SELEÇÃO DE ABAS ADMINISTRATIVAS */}
             <section className="max-w-7xl mx-auto mb-6">
                 <div className="flex border-b border-gray-800 gap-2">
                     <button
@@ -379,7 +386,6 @@ export default function AdminMasterDashboard() {
                 </div>
             </section>
 
-            {/* TABELA / VISUALIZAÇÃO DOS REGISTROS OU CLIENTES */}
             <main className="max-w-7xl mx-auto bg-gray-800 border border-gray-700/60 rounded-xl overflow-hidden shadow-xl">
                 {activeTab === 'items' ? (
                     <div className="overflow-x-auto">
@@ -444,7 +450,6 @@ export default function AdminMasterDashboard() {
                         )}
                     </div>
                 ) : (
-                    /* TABELA DE CONTROLE DE CORRETORES (TENANTS) COM EXIBIÇÃO E EDICÃO DE LIMITES */
                     <div className="overflow-x-auto">
                         {tenants.length === 0 ? (
                             <p className="p-8 text-center text-sm text-gray-400">Nenhum cliente cadastrado na plataforma.</p>
@@ -455,7 +460,7 @@ export default function AdminMasterDashboard() {
                                         <th className="p-4">Nome do Cliente</th>
                                         <th className="p-4">Contato / E-mail</th>
                                         <th className="p-4">Limites Atuais</th>
-                                        <th className="p-4">Data Cadastro</th>
+                                        <th className="p-4">Validade / Status</th>
                                         <th className="p-4 text-right">Ações Críticas</th>
                                     </tr>
                                 </thead>
@@ -479,8 +484,25 @@ export default function AdminMasterDashboard() {
                                                     🖼️ Fotos/Registro: <strong>{t.maxImagesPerItem ?? 4}</strong>
                                                 </span>
                                             </td>
-                                            <td className="p-4 text-xs text-gray-400 font-mono">
-                                                {new Date(t.createdAt).toLocaleDateString('pt-BR')}
+                                            <td className="p-4 text-xs font-mono">
+                                                {(() => {
+                                                    const expires = t.subscriptionExpiresAt
+                                                        ? new Date(t.subscriptionExpiresAt)
+                                                        : new Date(new Date(t.createdAt).setFullYear(new Date(t.createdAt).getFullYear() + 1));
+                                                    const now = new Date();
+                                                    const isExpired = now > expires;
+
+                                                    return (
+                                                        <div>
+                                                            <p className={`font-bold ${isExpired ? 'text-red-400' : 'text-emerald-400'}`}>
+                                                                {expires.toLocaleDateString('pt-BR', { timeZone: 'UTC' })}
+                                                            </p>
+                                                            <span className="text-[10px] text-gray-400">
+                                                                {isExpired ? '⚠️ Vencido' : '✅ Em dia'}
+                                                            </span>
+                                                        </div>
+                                                    );
+                                                })()}
                                             </td>
                                             <td className="p-4 text-right whitespace-nowrap">
                                                 <div className="inline-flex gap-2">
@@ -489,6 +511,10 @@ export default function AdminMasterDashboard() {
                                                             setEditingTenantLimits(t);
                                                             setLimitMaxItems(t.maxItems ?? 10);
                                                             setLimitMaxImages(t.maxImagesPerItem ?? 4);
+                                                            const expDate = t.subscriptionExpiresAt
+                                                                ? new Date(t.subscriptionExpiresAt).toISOString().split('T')[0]
+                                                                : new Date(new Date(t.createdAt).setFullYear(new Date(t.createdAt).getFullYear() + 1)).toISOString().split('T')[0];
+                                                            setLimitSubscriptionExpiresAt(expDate);
                                                         }}
                                                         className="bg-blue-500/10 hover:bg-blue-600 text-blue-400 hover:text-white border border-blue-500/30 px-3 py-1.5 rounded-lg text-xs font-bold transition"
                                                     >

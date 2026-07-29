@@ -40,7 +40,6 @@ export async function GET(request: Request) {
     }
 }
 
-// NOVO: Atualiza os limites do cliente (maxItems e maxImagesPerItem)
 export async function PUT(request: Request) {
     const isMaster = await checkMasterPrivileges(request);
     if (!isMaster) {
@@ -53,22 +52,28 @@ export async function PUT(request: Request) {
         if (!id) return NextResponse.json({ message: "ID do cliente não fornecido." }, { status: 400 });
 
         const body = await request.json();
-        const { maxItems, maxImagesPerItem } = body;
+        const { maxItems, maxImagesPerItem, subscriptionExpiresAt } = body;
 
         await dbConnect();
 
+        const updateData: any = {
+            maxItems: maxItems !== undefined ? Number(maxItems) : 10,
+            maxImagesPerItem: maxImagesPerItem !== undefined ? Number(maxImagesPerItem) : 4,
+        };
+
+        if (subscriptionExpiresAt) {
+            updateData.subscriptionExpiresAt = new Date(subscriptionExpiresAt);
+        }
+
         const updatedTenant = await Tenant.findByIdAndUpdate(
             id,
-            {
-                maxItems: maxItems !== undefined ? Number(maxItems) : 10,
-                maxImagesPerItem: maxImagesPerItem !== undefined ? Number(maxImagesPerItem) : 4,
-            },
+            updateData,
             { new: true }
         ).select('-passwordHash');
 
         return NextResponse.json(updatedTenant, { status: 200 });
     } catch (error) {
-        return NextResponse.json({ message: "Erro ao atualizar limites do cliente." }, { status: 500 });
+        return NextResponse.json({ message: "Erro ao atualizar limites e anuidade do cliente." }, { status: 500 });
     }
 }
 

@@ -41,9 +41,41 @@ export default function LoginForm() {
         }
     };
 
+    // Varre o texto de erro, localiza o número de telefone e o torna um link clicável do WhatsApp no mesmo parágrafo
+    const renderErrorMessageWithWhatsApp = (message: string) => {
+        const phoneRegex = /(\(\d{2}\)\s?\d{4,5}-\d{4})/g;
+        const parts = message.split(phoneRegex);
+
+        return parts.map((part, index) => {
+            if (phoneRegex.test(part)) {
+                const cleanPhone = part.replace(/\D/g, '');
+                const whatsappUrl = `https://wa.me/55${cleanPhone}?text=Ol%C3%A1%2C%20gostaria%20de%20renovar%20meu%20acesso`;
+
+                return (
+                    <a
+                        key={index}
+                        href={whatsappUrl}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="font-bold underline text-red-600 dark:text-red-400 hover:text-red-700 dark:hover:text-red-300 transition-colors inline"
+                    >
+                        {part}
+                    </a>
+                );
+            }
+            return part;
+        });
+    };
+
     return (
         <form onSubmit={handleSubmit} className="space-y-4">
-            {error && <p className="text-red-500 text-sm text-center font-medium">{error}</p>}
+            {error && (
+                <div className="p-3 rounded-lg bg-red-50 dark:bg-red-950/40 border border-red-200 dark:border-red-900/60 text-red-600 dark:text-red-400 text-sm text-center">
+                    <p className="font-medium leading-relaxed">
+                        {renderErrorMessageWithWhatsApp(error)}
+                    </p>
+                </div>
+            )}
 
             <div>
                 <label className="flex items-center text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
@@ -55,7 +87,7 @@ export default function LoginForm() {
                     value={loginIdentifier}
                     onChange={(e) => setLoginIdentifier(e.target.value)}
                     required
-                    className="w-full p-2.5 bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-700 rounded-lg text-sm"
+                    className="w-full p-2.5 bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-700 rounded-lg text-sm text-gray-900 dark:text-white"
                     placeholder="Digite seu e-mail ou nº de telefone"
                 />
             </div>
@@ -70,7 +102,7 @@ export default function LoginForm() {
                     value={password}
                     onChange={(e) => setPassword(e.target.value)}
                     required
-                    className="w-full p-2.5 bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-700 rounded-lg text-sm"
+                    className="w-full p-2.5 bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-700 rounded-lg text-sm text-gray-900 dark:text-white"
                     placeholder="••••••••"
                 />
             </div>

@@ -13,9 +13,19 @@ const TenantSchema = new mongoose.Schema({
     websiteLink: { type: String, default: '' },
     businessCardLink: { type: String, default: '' },
 
-    // Novas propriedades de limites por cliente
+    // Limites de uso
     maxItems: { type: Number, default: 10 },
     maxImagesPerItem: { type: Number, default: 4 },
+
+    // Data de vencimento da anuidade (Padrão: 1 ano a partir do cadastro)
+    subscriptionExpiresAt: {
+        type: Date,
+        default: () => {
+            const date = new Date();
+            date.setFullYear(date.getFullYear() + 1);
+            return date;
+        }
+    },
 }, {
     timestamps: true,
     collection: 'tenants'

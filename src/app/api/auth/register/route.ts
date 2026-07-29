@@ -20,14 +20,18 @@ export async function POST(req: Request) {
 
         const hashedPassword = await bcrypt.hash(password, 10);
 
+        const oneYearFromNow = new Date();
+        oneYearFromNow.setFullYear(oneYearFromNow.getFullYear() + 1);
+
         const newTenant = new Tenant({
             name,
             email,
             phone: cleanPhone,
             passwordHash: hashedPassword,
             city: city ? city.trim() : '',
-            websiteLink: websiteLink || '', // <-- SALVA O LINK DO SITE
+            websiteLink: websiteLink || '',
             businessCardLink: businessCardLink || '',
+            subscriptionExpiresAt: oneYearFromNow // Setando 1 ano de validade
         });
 
         await newTenant.save();

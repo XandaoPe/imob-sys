@@ -45,14 +45,31 @@ export async function PUT(req: Request, { params }: { params: Promise<{ id: stri
             );
         }
 
-        // Validação de Reativação
+        // ✅ Função segura para converter data no backend sem interferência de fuso horário
+        const parseDateSafely = (dateStr: string | null | undefined): Date | null => {
+            if (!dateStr) return null;
+            if (typeof dateStr === 'string' && dateStr.includes('-')) {
+                const cleanStr = dateStr.split('T')[0];
+                const parts = cleanStr.split('-');
+                if (parts.length === 3) {
+                    return new Date(Number(parts[0]), Number(parts[1]) - 1, Number(parts[2]));
+                }
+            }
+            const parsed = new Date(dateStr);
+            return isNaN(parsed.getTime()) ? null : parsed;
+        };
+
+        // Validação de Reativação corrigida com fuso horário local
         if (isActive && expiresAt) {
-            const expDate = new Date(expiresAt);
+            const expDate = parseDateSafely(expiresAt);
+            if (expDate) {
+                expDate.setHours(0, 0, 0, 0);
+            }
+
             const now = new Date();
-            // Reseta horário para comparar apenas a data
             now.setHours(0, 0, 0, 0);
 
-            if (expDate < now) {
+            if (!expDate || expDate < now) {
                 return NextResponse.json(
                     { error: 'Para reativar o anúncio, informe uma nova data de validade válida.' },
                     { status: 400 }
@@ -62,7 +79,10 @@ export async function PUT(req: Request, { params }: { params: Promise<{ id: stri
 
         const updateData: any = { title, description };
         if (images) updateData.images = images;
-        if (expiresAt) updateData.expiresAt = new Date(expiresAt);
+        if (expiresAt) {
+            const parsedExp = parseDateSafely(expiresAt);
+            if (parsedExp) updateData.expiresAt = parsedExp;
+        }
         if (typeof isActive === 'boolean') updateData.isActive = isActive;
 
         const updatedItem = await Item.findOneAndUpdate(

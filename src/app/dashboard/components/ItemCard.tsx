@@ -26,12 +26,31 @@ export default function ItemCard({
     const isThisItemEditing = editingId === item._id;
     const gallery = item.images || [];
 
-    // Cálculo do Status de Validade
+    // ✅ Função segura para converter a data sem interferência de fuso horário (UTC)
+    const parseDateSafely = (dateStr: string | null | undefined): Date | null => {
+        if (!dateStr) return null;
+        if (typeof dateStr === 'string' && dateStr.includes('-')) {
+            const cleanStr = dateStr.split('T')[0];
+            const parts = cleanStr.split('-');
+            if (parts.length === 3) {
+                return new Date(Number(parts[0]), Number(parts[1]) - 1, Number(parts[2]));
+            }
+        }
+        const parsed = new Date(dateStr);
+        return isNaN(parsed.getTime()) ? null : parsed;
+    };
+
+    // Cálculo do Status de Validade corrigido
     const today = new Date();
     today.setHours(0, 0, 0, 0);
 
-    const expirationDate = item.expiresAt ? new Date(item.expiresAt) : null;
-    const isExpired = expirationDate ? expirationDate < today : false;
+    const expirationDate = parseDateSafely(item.expiresAt);
+    if (expirationDate) {
+        expirationDate.setHours(0, 0, 0, 0);
+    }
+
+    // O anúncio permanece válido durante todo o dia da expiração (só expira se hoje for estritamente maior que a data de expiração)
+    const isExpired = expirationDate ? today > expirationDate : false;
     const isCurrentlyActive = item.isActive !== false && !isExpired;
 
     const formattedDate = expirationDate

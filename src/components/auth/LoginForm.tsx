@@ -3,12 +3,14 @@
 import React, { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { InfoTooltip } from '@/components/ui/InfoTooltip';
+import ForgotPasswordModal from '@/components/auth/ForgotPasswordModal';
 
 export default function LoginForm() {
     const [loginIdentifier, setLoginIdentifier] = useState('');
     const [password, setPassword] = useState('');
     const [error, setError] = useState('');
     const [isSubmitting, setIsSubmitting] = useState(false);
+    const [isForgotPasswordOpen, setIsForgotPasswordOpen] = useState(false);
     const router = useRouter();
 
     const handleSubmit = async (e: React.FormEvent) => {
@@ -41,7 +43,6 @@ export default function LoginForm() {
         }
     };
 
-    // Varre o texto de erro, localiza o número de telefone e o torna um link clicável do WhatsApp no mesmo parágrafo
     const renderErrorMessageWithWhatsApp = (message: string) => {
         const phoneRegex = /(\(\d{2}\)\s?\d{4,5}-\d{4})/g;
         const parts = message.split(phoneRegex);
@@ -68,52 +69,68 @@ export default function LoginForm() {
     };
 
     return (
-        <form onSubmit={handleSubmit} className="space-y-4">
-            {error && (
-                <div className="p-3 rounded-lg bg-red-50 dark:bg-red-950/40 border border-red-200 dark:border-red-900/60 text-red-600 dark:text-red-400 text-sm text-center">
-                    <p className="font-medium leading-relaxed">
-                        {renderErrorMessageWithWhatsApp(error)}
-                    </p>
+        <>
+            <form onSubmit={handleSubmit} className="space-y-4">
+                {error && (
+                    <div className="p-3 rounded-lg bg-red-50 dark:bg-red-950/40 border border-red-200 dark:border-red-900/60 text-red-600 dark:text-red-400 text-sm text-center">
+                        <p className="font-medium leading-relaxed">
+                            {renderErrorMessageWithWhatsApp(error)}
+                        </p>
+                    </div>
+                )}
+
+                <div>
+                    <label className="flex items-center text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                        <span>E-mail ou Telefone</span>
+                        <InfoTooltip text="Digite o e-mail ou o número do seu WhatsApp cadastrado durante a criação da conta." />
+                    </label>
+                    <input
+                        type="text"
+                        value={loginIdentifier}
+                        onChange={(e) => setLoginIdentifier(e.target.value)}
+                        required
+                        className="w-full p-2.5 bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-700 rounded-lg text-sm text-gray-900 dark:text-white"
+                        placeholder="Digite seu e-mail ou nº de telefone"
+                    />
                 </div>
-            )}
 
-            <div>
-                <label className="flex items-center text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-                    <span>E-mail ou Telefone</span>
-                    <InfoTooltip text="Digite o e-mail ou o número do seu WhatsApp cadastrado durante a criação da conta." />
-                </label>
-                <input
-                    type="text"
-                    value={loginIdentifier}
-                    onChange={(e) => setLoginIdentifier(e.target.value)}
-                    required
-                    className="w-full p-2.5 bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-700 rounded-lg text-sm text-gray-900 dark:text-white"
-                    placeholder="Digite seu e-mail ou nº de telefone"
-                />
-            </div>
+                <div>
+                    <div className="flex items-center justify-between mb-1">
+                        <label className="flex items-center text-sm font-medium text-gray-700 dark:text-gray-300">
+                            <span>Senha</span>
+                            <InfoTooltip text="Sua senha secreta de acesso individual ao painel administrativo de anúncios." />
+                        </label>
+                        <button
+                            type="button"
+                            onClick={() => setIsForgotPasswordOpen(true)}
+                            className="text-xs font-semibold text-blue-600 dark:text-blue-400 hover:underline"
+                        >
+                            Esqueci minha senha
+                        </button>
+                    </div>
+                    <input
+                        type="password"
+                        value={password}
+                        onChange={(e) => setPassword(e.target.value)}
+                        required
+                        className="w-full p-2.5 bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-700 rounded-lg text-sm text-gray-900 dark:text-white"
+                        placeholder="••••••••"
+                    />
+                </div>
 
-            <div>
-                <label className="flex items-center text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-                    <span>Senha</span>
-                    <InfoTooltip text="Sua senha secreta de acesso individual ao painel administrativo de anúncios." />
-                </label>
-                <input
-                    type="password"
-                    value={password}
-                    onChange={(e) => setPassword(e.target.value)}
-                    required
-                    className="w-full p-2.5 bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-700 rounded-lg text-sm text-gray-900 dark:text-white"
-                    placeholder="••••••••"
-                />
-            </div>
+                <button
+                    type="submit"
+                    disabled={isSubmitting}
+                    className="w-full bg-blue-600 dark:bg-blue-500 text-white p-2.5 rounded-lg font-medium hover:bg-blue-700 transition disabled:opacity-50"
+                >
+                    {isSubmitting ? 'Entrando...' : 'Entrar'}
+                </button>
+            </form>
 
-            <button
-                type="submit"
-                disabled={isSubmitting}
-                className="w-full bg-blue-600 dark:bg-blue-500 text-white p-2.5 rounded-lg font-medium hover:bg-blue-700 transition disabled:opacity-50"
-            >
-                {isSubmitting ? 'Entrando...' : 'Entrar'}
-            </button>
-        </form>
+            <ForgotPasswordModal
+                isOpen={isForgotPasswordOpen}
+                onClose={() => setIsForgotPasswordOpen(false)}
+            />
+        </>
     );
 }

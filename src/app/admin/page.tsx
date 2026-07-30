@@ -42,6 +42,12 @@ export default function AdminMasterDashboard() {
     const [limitMaxImages, setLimitMaxImages] = useState<number>(4);
     const [limitSubscriptionExpiresAt, setLimitSubscriptionExpiresAt] = useState<string>('');
 
+    const [editTenantName, setEditTenantName] = useState('');
+    const [editTenantEmail, setEditTenantEmail] = useState('');
+    const [editTenantPhone, setEditTenantPhone] = useState('');
+    const [editTenantCity, setEditTenantCity] = useState('');
+    const [editTenantPassword, setEditTenantPassword] = useState('');
+
     const [loading, setLoading] = useState(true);
     const [errorMsg, setErrorMsg] = useState<string | null>(null);
     const router = useRouter();
@@ -86,34 +92,45 @@ export default function AdminMasterDashboard() {
         }
     };
 
-    const handleSaveTenantLimits = async (e: React.FormEvent) => {
+    const handleSaveTenant = async (e: React.FormEvent) => {
         e.preventDefault();
         if (!editingTenantLimits) return;
 
         try {
+            const payload: any = {
+                name: editTenantName,
+                email: editTenantEmail,
+                phone: editTenantPhone,
+                city: editTenantCity,
+                maxItems: limitMaxItems,
+                maxImagesPerItem: limitMaxImages,
+                subscriptionExpiresAt: limitSubscriptionExpiresAt,
+            };
+
+            if (editTenantPassword.trim() !== '') {
+                payload.password = editTenantPassword;
+            }
+
             const res = await fetch(`/api/admin/tenants?id=${editingTenantLimits._id}`, {
                 method: 'PUT',
                 headers: {
                     'Content-Type': 'application/json',
                     Authorization: `Bearer ${localStorage.getItem('token')}`
                 },
-                body: JSON.stringify({
-                    maxItems: limitMaxItems,
-                    maxImagesPerItem: limitMaxImages,
-                    subscriptionExpiresAt: limitSubscriptionExpiresAt
-                })
+                body: JSON.stringify(payload)
             });
 
             if (res.ok) {
-                alert('Limites e validade atualizados com sucesso!');
+                alert('Cadastro, senha e limites atualizados com sucesso!');
                 setEditingTenantLimits(null);
+                setEditTenantPassword('');
                 verificarAcessoEPuxarDados();
             } else {
                 const errData = await res.json();
-                alert(errData.message || 'Erro ao atualizar dados.');
+                alert(errData.message || 'Erro ao atualizar dados do cliente.');
             }
         } catch (error) {
-            alert('Falha ao conectar ao servidor para alterar permissões.');
+            alert('Falha ao conectar ao servidor para alterar dados do cliente.');
         }
     };
 
@@ -135,7 +152,7 @@ export default function AdminMasterDashboard() {
     };
 
     const handleDeleteTenant = async (id: string) => {
-        if (!confirm('ATENÇÃO CRÍTICA:\n\nExcluir este cliente removerá sua conta e TODOS os registros cadastrados por ele automaticamente.\nDeseja prosseguir?')) return;
+        if (!confirm('ATENÇÃO CRÍTICA:\n\nExcluir este cliente removerá sua conta e TODOS os registros cadastrados por ele automaticamente.\Deseja prosseguir?')) return;
 
         try {
             const res = await fetch(`/api/admin/tenants?id=${id}`, {
@@ -179,6 +196,24 @@ export default function AdminMasterDashboard() {
         }
     };
 
+    // Helper seguro para formatar e calcular vencimento sem erro de timezone
+    const getExpirationDetails = (tenant: Corretor) => {
+        const expStr = tenant.subscriptionExpiresAt
+            ? tenant.subscriptionExpiresAt.split('T')[0]
+            : new Date(new Date(tenant.createdAt).setFullYear(new Date(tenant.createdAt).getFullYear() + 1)).toISOString().split('T')[0];
+
+        const [y, m, d] = expStr.split('-').map(Number);
+        const expiresDate = new Date(y, m - 1, d);
+
+        const today = new Date();
+        today.setHours(0, 0, 0, 0);
+
+        const isExpired = today > expiresDate;
+        const formattedDate = `${String(d).padStart(2, '0')}/${String(m).padStart(2, '0')}/${y}`;
+
+        return { formattedDate, isExpired, expStr };
+    };
+
     if (loading) {
         return (
             <div className="min-h-screen bg-gray-900 text-white flex flex-col items-center justify-center p-6">
@@ -212,56 +247,125 @@ export default function AdminMasterDashboard() {
         <div className="min-h-screen bg-gray-900 text-gray-100 p-6 font-sans">
             {editingTenantLimits && (
                 <div className="fixed inset-0 bg-black/80 backdrop-blur-sm z-50 flex items-center justify-center p-4">
-                    <div className="bg-gray-800 border border-gray-700 rounded-2xl p-6 max-w-md w-full text-gray-100 relative shadow-2xl">
+                    <div className="bg-gray-800 border border-gray-700 rounded-2xl p-6 max-w-xl w-full text-gray-100 relative shadow-2xl max-h-[90vh] overflow-y-auto">
                         <button
                             onClick={() => setEditingTenantLimits(null)}
                             className="absolute top-4 right-4 text-gray-400 hover:text-white text-2xl font-bold"
                         >
                             &times;
                         </button>
-                        <h3 className="text-xl font-bold text-blue-400 mb-1">Ajustar Limites do Cliente</h3>
-                        <p className="text-xs text-gray-400 mb-4">Cliente: <strong className="text-gray-200">{editingTenantLimits.name}</strong></p>
+                        <h3 className="text-xl font-bold text-blue-400 mb-1">Editar Cadastro do Cliente (Master)</h3>
+                        <p className="text-xs text-gray-400 mb-4">ID: <strong className="text-gray-200">{editingTenantLimits._id}</strong></p>
 
-                        <form onSubmit={handleSaveTenantLimits} className="space-y-4">
+                        <form onSubmit={handleSaveTenant} className="space-y-4">
+                            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                                <div>
+                                    <label className="block text-xs uppercase tracking-wider font-semibold text-gray-400 mb-1">
+                                        Nome Completo
+                                    </label>
+                                    <input
+                                        type="text"
+                                        value={editTenantName}
+                                        onChange={(e) => setEditTenantName(e.target.value)}
+                                        required
+                                        className="w-full bg-gray-900 border border-gray-700 rounded-lg p-2.5 text-sm text-white focus:outline-none focus:ring-2 focus:ring-blue-500"
+                                    />
+                                </div>
+                                <div>
+                                    <label className="block text-xs uppercase tracking-wider font-semibold text-gray-400 mb-1">
+                                        E-mail
+                                    </label>
+                                    <input
+                                        type="email"
+                                        value={editTenantEmail}
+                                        onChange={(e) => setEditTenantEmail(e.target.value)}
+                                        required
+                                        className="w-full bg-gray-900 border border-gray-700 rounded-lg p-2.5 text-sm text-white focus:outline-none focus:ring-2 focus:ring-blue-500"
+                                    />
+                                </div>
+                            </div>
+
+                            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                                <div>
+                                    <label className="block text-xs uppercase tracking-wider font-semibold text-gray-400 mb-1">
+                                        Telefone / WhatsApp
+                                    </label>
+                                    <input
+                                        type="text"
+                                        value={editTenantPhone}
+                                        onChange={(e) => setEditTenantPhone(e.target.value)}
+                                        required
+                                        className="w-full bg-gray-900 border border-gray-700 rounded-lg p-2.5 text-sm text-white focus:outline-none focus:ring-2 focus:ring-blue-500"
+                                    />
+                                </div>
+                                <div>
+                                    <label className="block text-xs uppercase tracking-wider font-semibold text-gray-400 mb-1">
+                                        Cidade (Opcional)
+                                    </label>
+                                    <input
+                                        type="text"
+                                        value={editTenantCity}
+                                        onChange={(e) => setEditTenantCity(e.target.value)}
+                                        className="w-full bg-gray-900 border border-gray-700 rounded-lg p-2.5 text-sm text-white focus:outline-none focus:ring-2 focus:ring-blue-500"
+                                    />
+                                </div>
+                            </div>
+
                             <div>
-                                <label className="block text-xs uppercase tracking-wider font-semibold text-gray-400 mb-1">
-                                    Limite de Registros
+                                <label className="block text-xs uppercase tracking-wider font-semibold text-amber-400 mb-1">
+                                    Nova Senha (Deixe em branco para manter a atual)
                                 </label>
                                 <input
-                                    type="number"
-                                    min="1"
-                                    value={limitMaxItems}
-                                    onChange={(e) => setLimitMaxItems(Number(e.target.value))}
-                                    required
-                                    className="w-full bg-gray-900 border border-gray-700 rounded-lg p-2.5 text-sm text-white focus:outline-none focus:ring-2 focus:ring-blue-500"
+                                    type="text"
+                                    value={editTenantPassword}
+                                    onChange={(e) => setEditTenantPassword(e.target.value)}
+                                    placeholder="Digite uma nova senha se desejar redefinir"
+                                    className="w-full bg-gray-900 border border-amber-600/50 rounded-lg p-2.5 text-sm text-white focus:outline-none focus:ring-2 focus:ring-amber-500"
                                 />
                             </div>
-                            <div>
-                                <label className="block text-xs uppercase tracking-wider font-semibold text-gray-400 mb-1">
-                                    Limite de Fotos por Registro
-                                </label>
-                                <input
-                                    type="number"
-                                    min="1"
-                                    value={limitMaxImages}
-                                    onChange={(e) => setLimitMaxImages(Number(e.target.value))}
-                                    required
-                                    className="w-full bg-gray-900 border border-gray-700 rounded-lg p-2.5 text-sm text-white focus:outline-none focus:ring-2 focus:ring-blue-500"
-                                />
+
+                            <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 pt-2 border-t border-gray-700">
+                                <div>
+                                    <label className="block text-xs uppercase tracking-wider font-semibold text-gray-400 mb-1">
+                                        Máx. Registros
+                                    </label>
+                                    <input
+                                        type="number"
+                                        min="1"
+                                        value={limitMaxItems}
+                                        onChange={(e) => setLimitMaxItems(Number(e.target.value))}
+                                        required
+                                        className="w-full bg-gray-900 border border-gray-700 rounded-lg p-2.5 text-sm text-white focus:outline-none focus:ring-2 focus:ring-blue-500"
+                                    />
+                                </div>
+                                <div>
+                                    <label className="block text-xs uppercase tracking-wider font-semibold text-gray-400 mb-1">
+                                        Máx. Fotos/Reg.
+                                    </label>
+                                    <input
+                                        type="number"
+                                        min="1"
+                                        value={limitMaxImages}
+                                        onChange={(e) => setLimitMaxImages(Number(e.target.value))}
+                                        required
+                                        className="w-full bg-gray-900 border border-gray-700 rounded-lg p-2.5 text-sm text-white focus:outline-none focus:ring-2 focus:ring-blue-500"
+                                    />
+                                </div>
+                                <div>
+                                    <label className="block text-xs uppercase tracking-wider font-semibold text-gray-400 mb-1">
+                                        Vencimento
+                                    </label>
+                                    <input
+                                        type="date"
+                                        value={limitSubscriptionExpiresAt}
+                                        onChange={(e) => setLimitSubscriptionExpiresAt(e.target.value)}
+                                        required
+                                        className="w-full bg-gray-900 border border-gray-700 rounded-lg p-2.5 text-sm text-white focus:outline-none focus:ring-2 focus:ring-blue-500"
+                                    />
+                                </div>
                             </div>
-                            <div>
-                                <label className="block text-xs uppercase tracking-wider font-semibold text-gray-400 mb-1">
-                                    Data de Vencimento da Anuidade
-                                </label>
-                                <input
-                                    type="date"
-                                    value={limitSubscriptionExpiresAt}
-                                    onChange={(e) => setLimitSubscriptionExpiresAt(e.target.value)}
-                                    required
-                                    className="w-full bg-gray-900 border border-gray-700 rounded-lg p-2.5 text-sm text-white focus:outline-none focus:ring-2 focus:ring-blue-500"
-                                />
-                            </div>
-                            <div className="flex justify-end gap-2 pt-2">
+
+                            <div className="flex justify-end gap-2 pt-4">
                                 <button
                                     type="button"
                                     onClick={() => setEditingTenantLimits(null)}
@@ -273,7 +377,7 @@ export default function AdminMasterDashboard() {
                                     type="submit"
                                     className="bg-blue-600 hover:bg-blue-500 text-white font-bold px-4 py-2 rounded-lg text-xs transition shadow-md"
                                 >
-                                    Salvar Novos Limites
+                                    Salvar Alterações Master
                                 </button>
                             </div>
                         </form>
@@ -465,71 +569,66 @@ export default function AdminMasterDashboard() {
                                     </tr>
                                 </thead>
                                 <tbody className="divide-y divide-gray-700/50 text-sm">
-                                    {tenants.map((t) => (
-                                        <tr key={t._id} className="hover:bg-gray-750/30 transition-colors">
-                                            <td className="p-4 whitespace-nowrap">
-                                                <p className="font-bold text-white text-base">{t.name}</p>
-                                                <span className="text-[10px] font-mono text-gray-500">TenantID: {t._id}</span>
-                                            </td>
-                                            <td className="p-4 font-mono text-xs">
-                                                <p className="text-gray-200">{t.email}</p>
-                                                <p className="text-blue-400 mt-0.5">{t.phone}</p>
-                                            </td>
-                                            <td className="p-4 text-xs font-mono">
-                                                <span className="bg-blue-900/40 text-blue-300 border border-blue-800 px-2 py-1 rounded inline-block mb-1">
-                                                    📌 Registro: <strong>{t.maxItems ?? 10}</strong>
-                                                </span>
-                                                <br />
-                                                <span className="bg-emerald-900/40 text-emerald-300 border border-emerald-800 px-2 py-1 rounded inline-block">
-                                                    🖼️ Fotos/Registro: <strong>{t.maxImagesPerItem ?? 4}</strong>
-                                                </span>
-                                            </td>
-                                            <td className="p-4 text-xs font-mono">
-                                                {(() => {
-                                                    const expires = t.subscriptionExpiresAt
-                                                        ? new Date(t.subscriptionExpiresAt)
-                                                        : new Date(new Date(t.createdAt).setFullYear(new Date(t.createdAt).getFullYear() + 1));
-                                                    const now = new Date();
-                                                    const isExpired = now > expires;
-
-                                                    return (
-                                                        <div>
-                                                            <p className={`font-bold ${isExpired ? 'text-red-400' : 'text-emerald-400'}`}>
-                                                                {expires.toLocaleDateString('pt-BR', { timeZone: 'UTC' })}
-                                                            </p>
-                                                            <span className="text-[10px] text-gray-400">
-                                                                {isExpired ? '⚠️ Vencido' : '✅ Em dia'}
-                                                            </span>
-                                                        </div>
-                                                    );
-                                                })()}
-                                            </td>
-                                            <td className="p-4 text-right whitespace-nowrap">
-                                                <div className="inline-flex gap-2">
-                                                    <button
-                                                        onClick={() => {
-                                                            setEditingTenantLimits(t);
-                                                            setLimitMaxItems(t.maxItems ?? 10);
-                                                            setLimitMaxImages(t.maxImagesPerItem ?? 4);
-                                                            const expDate = t.subscriptionExpiresAt
-                                                                ? new Date(t.subscriptionExpiresAt).toISOString().split('T')[0]
-                                                                : new Date(new Date(t.createdAt).setFullYear(new Date(t.createdAt).getFullYear() + 1)).toISOString().split('T')[0];
-                                                            setLimitSubscriptionExpiresAt(expDate);
-                                                        }}
-                                                        className="bg-blue-500/10 hover:bg-blue-600 text-blue-400 hover:text-white border border-blue-500/30 px-3 py-1.5 rounded-lg text-xs font-bold transition"
-                                                    >
-                                                        Ajustar Limites
-                                                    </button>
-                                                    <button
-                                                        onClick={() => handleDeleteTenant(t._id)}
-                                                        className="bg-red-600 hover:bg-red-700 text-white px-3 py-1.5 rounded-lg text-xs font-bold transition shadow"
-                                                    >
-                                                        Banir / Deletar
-                                                    </button>
-                                                </div>
-                                            </td>
-                                        </tr>
-                                    ))}
+                                    {tenants.map((t) => {
+                                        const { formattedDate, isExpired, expStr } = getExpirationDetails(t);
+                                        return (
+                                            <tr key={t._id} className="hover:bg-gray-750/30 transition-colors">
+                                                <td className="p-4 whitespace-nowrap">
+                                                    <p className="font-bold text-white text-base">{t.name}</p>
+                                                    <span className="text-[10px] font-mono text-gray-500">TenantID: {t._id}</span>
+                                                </td>
+                                                <td className="p-4 font-mono text-xs">
+                                                    <p className="text-gray-200">{t.email}</p>
+                                                    <p className="text-blue-400 mt-0.5">{t.phone}</p>
+                                                </td>
+                                                <td className="p-4 text-xs font-mono">
+                                                    <span className="bg-blue-900/40 text-blue-300 border border-blue-800 px-2 py-1 rounded inline-block mb-1">
+                                                        📌 Registro: <strong>{t.maxItems ?? 10}</strong>
+                                                    </span>
+                                                    <br />
+                                                    <span className="bg-emerald-900/40 text-emerald-300 border border-emerald-800 px-2 py-1 rounded inline-block">
+                                                        🖼️ Fotos/Registro: <strong>{t.maxImagesPerItem ?? 4}</strong>
+                                                    </span>
+                                                </td>
+                                                <td className="p-4 text-xs font-mono">
+                                                    <div>
+                                                        <p className={`font-bold ${isExpired ? 'text-red-400' : 'text-emerald-400'}`}>
+                                                            {formattedDate}
+                                                        </p>
+                                                        <span className="text-[10px] text-gray-400">
+                                                            {isExpired ? '⚠️ Vencido' : '✅ Em dia'}
+                                                        </span>
+                                                    </div>
+                                                </td>
+                                                <td className="p-4 text-right whitespace-nowrap">
+                                                    <div className="inline-flex gap-2">
+                                                        <button
+                                                            onClick={() => {
+                                                                setEditingTenantLimits(t);
+                                                                setEditTenantName(t.name || '');
+                                                                setEditTenantEmail(t.email || '');
+                                                                setEditTenantPhone(t.phone || '');
+                                                                setEditTenantCity(t.city || '');
+                                                                setEditTenantPassword('');
+                                                                setLimitMaxItems(t.maxItems ?? 10);
+                                                                setLimitMaxImages(t.maxImagesPerItem ?? 4);
+                                                                setLimitSubscriptionExpiresAt(expStr);
+                                                            }}
+                                                            className="bg-blue-500/10 hover:bg-blue-600 text-blue-400 hover:text-white border border-blue-500/30 px-3 py-1.5 rounded-lg text-xs font-bold transition"
+                                                        >
+                                                            Editar Cadastro
+                                                        </button>
+                                                        <button
+                                                            onClick={() => handleDeleteTenant(t._id)}
+                                                            className="bg-red-600 hover:bg-red-700 text-white px-3 py-1.5 rounded-lg text-xs font-bold transition shadow"
+                                                        >
+                                                            Banir / Deletar
+                                                        </button>
+                                                    </div>
+                                                </td>
+                                            </tr>
+                                        );
+                                    })}
                                 </tbody>
                             </table>
                         )}

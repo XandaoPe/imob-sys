@@ -3,6 +3,7 @@ import dbConnect from '@/lib/mongodb';
 import Tenant from '@/models/Tenant';
 import Item from '@/models/Item';
 import jwt from 'jsonwebtoken';
+import bcrypt from 'bcryptjs';
 
 const MASTER_ADMINS = ['18997901236', '18997261236', '5518997901236', '5518997261236'];
 
@@ -52,28 +53,42 @@ export async function PUT(request: Request) {
         if (!id) return NextResponse.json({ message: "ID do cliente não fornecido." }, { status: 400 });
 
         const body = await request.json();
-        const { maxItems, maxImagesPerItem, subscriptionExpiresAt } = body;
+        const { name, email, phone, city, password, maxItems, maxImagesPerItem, subscriptionExpiresAt } = body;
 
         await dbConnect();
 
-        const updateData: any = {
-            maxItems: maxItems !== undefined ? Number(maxItems) : 10,
-            maxImagesPerItem: maxImagesPerItem !== undefined ? Number(maxImagesPerItem) : 4,
-        };
-
-        if (subscriptionExpiresAt) {
-            updateData.subscriptionExpiresAt = new Date(subscriptionExpiresAt);
+        const tenant = await Tenant.findById(id);
+        if (!tenant) {
+            return NextResponse.json({ message: "Cliente não encontrado." }, { status: 404 });
         }
 
-        const updatedTenant = await Tenant.findByIdAndUpdate(
-            id,
-            updateData,
-            { new: true }
-        ).select('-passwordHash');
+        // Atualiza campos cadastrais se fornecidos
+        if (name !== undefined) tenant.name = name;
+        if (email !== undefined) tenant.email = email;
+        if (phone !== undefined) tenant.phone = phone;
+        if (city !== undefined) tenant.city = city;
+        if (maxItems !== undefined) tenant.maxItems = Number(maxItems);
+        if (maxImagesPerItem !== undefined) tenant.maxImagesPerItem = Number(maxImagesPerItem);
 
+        // Tratamento correto de data local (evita o recuo de 1 dia por fuso UTC)
+        if (subscriptionExpiresAt) {
+            const dateOnly = subscriptionExpiresAt.split('T')[0];
+            const [y, m, d] = dateOnly.split('-').map(Number);
+            tenant.subscriptionExpiresAt = new Date(y, m - 1, d);
+        }
+
+        // Se uma nova senha foi informada, gera o hash seguro
+        if (password && password.trim() !== '') {
+            const salt = await bcrypt.genSalt(10);
+            tenant.passwordHash = await bcrypt.hash(password, salt);
+        }
+
+        await tenant.save();
+
+        const updatedTenant = await Tenant.findById(id).select('-passwordHash');
         return NextResponse.json(updatedTenant, { status: 200 });
-    } catch (error) {
-        return NextResponse.json({ message: "Erro ao atualizar limites e anuidade do cliente." }, { status: 500 });
+    } catch (error: any) {
+        return NextResponse.json({ message: error.message || "Erro ao atualizar dados do cliente." }, { status: 500 });
     }
 }
 

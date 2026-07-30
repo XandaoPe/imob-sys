@@ -25,15 +25,25 @@ export default function AuthPage() {
           <RegisterForm onSuccess={() => setIsLogin(true)} />
         )}
 
-        <p className="text-center text-sm text-gray-600 dark:text-gray-400 mt-4">
+        <div className="text-center mt-6">
           <button
             onClick={() => setIsLogin(!isLogin)}
             type="button"
-            className="text-blue-600 dark:text-blue-400 font-medium hover:underline"
+            className={`w-full py-2.5 px-4 rounded-xl text-sm font-bold transition-all shadow-md ${isLogin
+                ? 'bg-gradient-to-r from-amber-500 to-amber-600 hover:from-amber-400 hover:to-amber-500 text-slate-950 animate-pulse shadow-amber-500/20'
+                : 'bg-transparent text-blue-600 dark:text-blue-400 hover:underline shadow-none'
+              }`}
           >
-            {isLogin ? 'Não tem conta? Cadastre-se' : 'Já tem uma conta? Conecte-se'}
+            {isLogin ? (
+              <span className="flex items-center justify-center gap-1.5">
+                <span>✨ Não tem conta?</span>
+                <span className="underline font-extrabold">Cadastre-se agora! 🚀</span>
+              </span>
+            ) : (
+              'Já tem uma conta? Conecte-se'
+            )}
           </button>
-        </p>
+        </div>
       </div>
     </div>
   );

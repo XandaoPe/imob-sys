@@ -254,7 +254,7 @@ export default function ItemForm({
                 <div>
                     <label className="flex items-center text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
                         <span>Imagens do Registro</span>
-                        <InfoTooltip text={`Envie até ${maxImagesPerItem} fotos.`} />
+                        <InfoTooltip text={`Envie até ${maxImagesPerItem} fotos. Use as setas para alterar a ordem de exibição.`} />
                     </label>
                     <label className={`flex flex-col items-center justify-center w-full h-24 border-2 border-dashed rounded-lg transition p-2 text-center ${images.length >= maxImagesPerItem || isLimitReached ? 'border-gray-200 dark:border-gray-800 bg-gray-100 dark:bg-gray-800/50 cursor-not-allowed opacity-70' : 'border-gray-300 dark:border-gray-700 bg-gray-50 dark:bg-gray-800 hover:bg-gray-100 cursor-pointer'}`}>
                         <svg className="w-6 h-6 mb-1 text-gray-500 dark:text-gray-400" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"></path></svg>
@@ -273,20 +273,50 @@ export default function ItemForm({
                 {images.length > 0 && (
                     <div className="p-1">
                         <div className="text-[11px] font-semibold text-gray-500 dark:text-gray-400 mb-1.5 flex justify-between items-center">
-                            <span>Organizar fotos:</span>
-                            <span className={images.length === maxImagesPerItem ? "text-red-500" : "text-blue-500"}>{images.length}/{maxImagesPerItem}</span>
+                            <span>Organizar ordem das fotos:</span>
+                            <span className={images.length === maxImagesPerItem ? "text-red-500 font-bold" : "text-blue-500 font-bold"}>{images.length}/{maxImagesPerItem}</span>
                         </div>
-                        <div className="grid grid-cols-3 gap-2 max-h-32 overflow-y-auto p-1.5 bg-gray-50 dark:bg-gray-800/50 border border-gray-200 dark:border-gray-700 rounded-lg">
+                        <div className="grid grid-cols-2 sm:grid-cols-3 gap-2.5 max-h-60 overflow-y-auto p-2 bg-gray-50 dark:bg-gray-800/50 border border-gray-200 dark:border-gray-700 rounded-lg">
                             {images.map((img, idx) => (
-                                <div key={idx} className="relative h-14 w-full border border-gray-200 dark:border-gray-700 rounded bg-white dark:bg-gray-800 group/formthumb">
-                                    <img src={img} className="h-full w-full object-cover rounded" alt="form-thumb" />
-                                    <button
-                                        type="button"
-                                        onClick={() => removeImageFromGallery(idx)}
-                                        className="absolute -top-1 -right-1 bg-red-500 text-white w-4 h-4 rounded-full flex items-center justify-center text-[10px] font-bold shadow hover:bg-red-600 transition z-10"
-                                    >
-                                        &times;
-                                    </button>
+                                <div key={idx} className="relative border border-gray-200 dark:border-gray-700 rounded-lg bg-white dark:bg-gray-900 flex flex-col justify-between overflow-hidden shadow-sm">
+                                    {/* Miniatura da Imagem */}
+                                    <div className="h-20 w-full bg-gray-100 dark:bg-gray-950 relative">
+                                        <img src={img} className="h-full w-full object-cover" alt="form-thumb" />
+                                        {/* Botão de Excluir */}
+                                        <button
+                                            type="button"
+                                            onClick={() => removeImageFromGallery(idx)}
+                                            className="absolute top-1.5 right-1.5 bg-red-600 hover:bg-red-700 text-white w-6 h-6 rounded-full flex items-center justify-center text-xs font-bold shadow-md transition"
+                                            title="Remover foto"
+                                        >
+                                            &times;
+                                        </button>
+                                    </div>
+
+                                    {/* Controles de Ordenação Limpos com Setas */}
+                                    <div className="bg-gray-50 dark:bg-gray-800/90 px-2 py-1.5 flex items-center justify-between border-t border-gray-200 dark:border-gray-700">
+                                        <button
+                                            type="button"
+                                            onClick={() => moveImageOrder(idx, 'left')}
+                                            disabled={idx === 0}
+                                            className={`w-7 h-7 flex items-center justify-center rounded text-sm font-bold transition ${idx === 0 ? 'text-gray-300 dark:text-gray-600 cursor-not-allowed bg-transparent' : 'text-blue-600 dark:text-blue-400 hover:bg-blue-100 dark:hover:bg-blue-900/50'}`}
+                                            title="Mover para esquerda"
+                                        >
+                                            ◀
+                                        </button>
+                                        <span className="text-[11px] font-bold text-gray-600 dark:text-gray-300">
+                                            {idx + 1}
+                                        </span>
+                                        <button
+                                            type="button"
+                                            onClick={() => moveImageOrder(idx, 'right')}
+                                            disabled={idx === images.length - 1}
+                                            className={`w-7 h-7 flex items-center justify-center rounded text-sm font-bold transition ${idx === images.length - 1 ? 'text-gray-300 dark:text-gray-600 cursor-not-allowed bg-transparent' : 'text-blue-600 dark:text-blue-400 hover:bg-blue-100 dark:hover:bg-blue-900/50'}`}
+                                            title="Mover para direita"
+                                        >
+                                            ▶
+                                        </button>
+                                    </div>
                                 </div>
                             ))}
                         </div>
@@ -306,7 +336,7 @@ export default function ItemForm({
                             type="button"
                             disabled={isLoading}
                             onClick={onResetForm}
-                            className="w-full bg-gray-100 dark:bg-gray-800 text-gray-600 dark:text-gray-300 p-2.5 rounded-lg font-medium hover:bg-gray-200 transition"
+                            className="w-full bg-gray-100 dark:bg-gray-800 text-gray-600 dark:text-gray-300 p-2.5 rounded-lg font-medium hover:bg-gray-200 dark:hover:bg-gray-700 transition"
                         >
                             Cancelar Edição
                         </button>

@@ -59,31 +59,64 @@ export async function POST(req: Request) {
         }
 
         // ==========================================
-        // 7. VALIDAÇÃO DE ANUIDADE E CARÊNCIA DE 10 DIAS
+        // VALIDAÇÃO DE ANUIDADE E PERÍODO DE TESTE (7 DIAS)
         // ==========================================
         const now = new Date();
+        const createdAt = new Date(tenant.createdAt);
+        const initialTrialEnd = new Date(createdAt);
+        initialTrialEnd.setDate(initialTrialEnd.getDate() + 7);
+
         const expiresAt = tenant.subscriptionExpiresAt
             ? new Date(tenant.subscriptionExpiresAt)
-            : new Date(new Date(tenant.createdAt).setFullYear(new Date(tenant.createdAt).getFullYear() + 1));
-
-        const gracePeriodEnd = new Date(expiresAt);
-        gracePeriodEnd.setDate(gracePeriodEnd.getDate() + 10);
+            : initialTrialEnd;
 
         let warningMessage: string | null = null;
 
-        if (now > gracePeriodEnd) {
-            // Bloqueio definitivo pós-carência
-            return NextResponse.json(
-                { error: 'Sua anuidade venceu e o período de carência expirou. Para renovar seu acesso, entre em contato com o administrador pelo número (18) 99726-1236.' },
-                { status: 403 }
-            );
-        } else if (now > expiresAt) {
-            // Cliente no período de carência (Informa o cliente)
-            const diffTime = gracePeriodEnd.getTime() - now.getTime();
-            const daysLeft = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+        // Identifica se realmente está no trial de 7 dias (sem customização prévia de data)
+        const isTrial = !tenant.subscriptionExpiresAt || expiresAt <= initialTrialEnd;
 
-            const formattedExpiresDate = expiresAt.toLocaleDateString('pt-BR', { timeZone: 'UTC' });
-            warningMessage = `Atenção: Sua anuidade venceu em ${formattedExpiresDate}. Você está no período de carência e possui mais ${daysLeft} dia(s) de acesso. Entre em contato para renovar: (18) 99726-1236.`;
+        if (!tenant.isAnuidadePaid) {
+            if (now > expiresAt) {
+                // Período expirado -> Bloqueio total com exigência de Pix
+                return NextResponse.json(
+                    {
+                        error: isTrial
+                            ? 'Seu período de teste gratuito de 7 dias expirou. Para desbloquear seu painel e anúncios, realize o pagamento da anuidade via Pix.'
+                            : 'Sua assinatura expirou. Para renovar seu acesso, entre em contato com o administrador ou realize o pagamento via Pix.',
+                        requiresPix: true,
+                        tenantId: tenant._id,
+                        tenantName: tenant.name,
+                        tenantPhone: tenant.phone,
+                        tenantEmail: tenant.email
+                    },
+                    { status: 403 }
+                );
+            } else {
+                // Apenas exibe o aviso se for o trial legítimo de 7 dias
+                if (isTrial) {
+                    const diffTime = expiresAt.getTime() - now.getTime();
+                    const daysLeft = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+                    const formattedExpiresDate = expiresAt.toLocaleDateString('pt-BR', { timeZone: 'UTC' });
+
+                    warningMessage = `Atenção: Você está no período de teste gratuito. Seu acesso expira em ${formattedExpiresDate} (restam ${daysLeft} dia(s)). Regularize sua anuidade via Pix para garantir acesso contínuo.`;
+                }
+            }
+        } else {
+            // Se já pagou, mantém a carência de 10 dias após o vencimento da anuidade
+            const gracePeriodEnd = new Date(expiresAt);
+            gracePeriodEnd.setDate(gracePeriodEnd.getDate() + 10);
+
+            if (now > gracePeriodEnd) {
+                return NextResponse.json(
+                    { error: 'Sua anuidade venceu e o período de carência expirou. Para renovar seu acesso, entre em contato com o administrador pelo número (18) 99726-1236.' },
+                    { status: 403 }
+                );
+            } else if (now > expiresAt) {
+                const diffTime = gracePeriodEnd.getTime() - now.getTime();
+                const daysLeft = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+                const formattedExpiresDate = expiresAt.toLocaleDateString('pt-BR', { timeZone: 'UTC' });
+                warningMessage = `Atenção: Sua anuidade venceu em ${formattedExpiresDate}. Você está no período de carência e possui mais ${daysLeft} dia(s) de acesso. Entre em contato para renovar: (18) 99726-1236.`;
+            }
         }
         // ==========================================
 
@@ -97,7 +130,7 @@ export async function POST(req: Request) {
             {
                 token,
                 tenantId: tenant._id,
-                warning: warningMessage, // Retorna a mensagem de alerta no login
+                warning: warningMessage,
                 tenant: {
                     id: tenant._id,
                     name: tenant.name,
@@ -106,6 +139,7 @@ export async function POST(req: Request) {
                     city: tenant.city || '',
                     websiteLink: tenant.websiteLink || '',
                     businessCardLink: tenant.businessCardLink || '',
+                    isAnuidadePaid: tenant.isAnuidadePaid
                 },
             },
             { status: 200 }

@@ -17,12 +17,15 @@ const TenantSchema = new mongoose.Schema({
     maxItems: { type: Number, default: 10 },
     maxImagesPerItem: { type: Number, default: 4 },
 
-    // Data de vencimento da anuidade (Padrão: 1 ano a partir do cadastro)
+    // Controle de Pagamento da Anuidade
+    isAnuidadePaid: { type: Boolean, default: false },
+
+    // Data de vencimento (Inicia com 7 dias de teste gratuito)
     subscriptionExpiresAt: {
         type: Date,
         default: () => {
             const date = new Date();
-            date.setFullYear(date.getFullYear() + 1);
+            date.setDate(date.getDate() + 7);
             return date;
         }
     },

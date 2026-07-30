@@ -7,37 +7,58 @@ export async function POST(req: Request) {
     try {
         await connectDB();
 
-        // Recebendo também o websiteLink enviado pelo formulário
         const { name, email, phone, password, city, websiteLink, businessCardLink } = await req.json();
 
-        const cleanPhone = phone.replace(/\D/g, '');
+        if (!name || !email || !password) {
+            return NextResponse.json({ error: 'Nome, e-mail e senha são obrigatórios' }, { status: 400 });
+        }
 
-        const existingEmail = await Tenant.findOne({ email });
-        if (existingEmail) return NextResponse.json({ error: 'E-mail já cadastrado' }, { status: 400 });
+        const cleanEmail = email.toLowerCase().trim();
+        const cleanPhone = phone ? phone.replace(/\D/g, '') : '';
 
-        const existingPhone = await Tenant.findOne({ phone: cleanPhone });
-        if (existingPhone) return NextResponse.json({ error: 'Telefone já cadastrado' }, { status: 400 });
+        const existingEmail = await Tenant.findOne({ email: cleanEmail });
+        if (existingEmail) {
+            return NextResponse.json({ error: 'E-mail já cadastrado' }, { status: 400 });
+        }
+
+        if (cleanPhone) {
+            const existingPhone = await Tenant.findOne({ phone: cleanPhone });
+            if (existingPhone) {
+                return NextResponse.json({ error: 'Telefone já cadastrado' }, { status: 400 });
+            }
+        }
 
         const hashedPassword = await bcrypt.hash(password, 10);
 
-        const oneYearFromNow = new Date();
-        oneYearFromNow.setFullYear(oneYearFromNow.getFullYear() + 1);
+        // 7 dias de teste gratuito
+        const trialExpiration = new Date();
+        trialExpiration.setDate(trialExpiration.getDate() + 7);
 
         const newTenant = new Tenant({
-            name,
-            email,
+            name: name.trim(),
+            email: cleanEmail,
             phone: cleanPhone,
             passwordHash: hashedPassword,
             city: city ? city.trim() : '',
-            websiteLink: websiteLink || '',
-            businessCardLink: businessCardLink || '',
-            subscriptionExpiresAt: oneYearFromNow // Setando 1 ano de validade
+            websiteLink: websiteLink ? websiteLink.trim() : '',
+            businessCardLink: businessCardLink ? businessCardLink.trim() : '',
+            isAnuidadePaid: false,
+            subscriptionExpiresAt: trialExpiration
         });
 
         await newTenant.save();
 
-        return NextResponse.json({ message: 'Registrado com sucesso' }, { status: 201 });
-    } catch (error: any) {
-        return NextResponse.json({ error: error.message }, { status: 500 });
+        return NextResponse.json({
+            message: 'Registrado com sucesso',
+            tenantId: newTenant._id,
+            tenantName: newTenant.name,
+            tenantPhone: newTenant.phone,
+            tenantEmail: newTenant.email
+        }, { status: 201 });
+
+    } catch (error: unknown) {
+        const errorMessage = error instanceof Error ? error.message : 'Erro interno do servidor';
+        console.error('Erro no registro:', error);
+        return NextResponse.json({ error: errorMessage }, { status: 500 });
     }
 }

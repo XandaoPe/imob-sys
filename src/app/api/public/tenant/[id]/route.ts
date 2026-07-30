@@ -15,8 +15,19 @@ export async function GET(req: Request, { params }: { params: Promise<{ id: stri
         }
 
         const now = new Date();
+        const expiresAt = new Date(tenant.subscriptionExpiresAt);
 
-        // Filtra apenas anúncios ativos E cuja validade seja igual ou posterior à data atual
+        // Se não pagou e o prazo expirou, esconde os itens do catálogo
+        if (!tenant.isAnuidadePaid && now > expiresAt) {
+            return NextResponse.json({
+                tenantName: tenant.name,
+                tenantPhone: tenant.phone,
+                websiteLink: tenant.websiteLink,
+                businessCardLink: tenant.businessCardLink,
+                items: []
+            });
+        }
+
         const items = await Item.find({
             tenantId,
             isActive: true,

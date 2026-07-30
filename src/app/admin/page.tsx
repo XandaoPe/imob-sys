@@ -12,6 +12,7 @@ interface Corretor {
     maxItems?: number;
     maxImagesPerItem?: number;
     subscriptionExpiresAt?: string;
+    isAnuidadePaid?: boolean;
 }
 
 interface Registro {
@@ -47,6 +48,11 @@ export default function AdminMasterDashboard() {
     const [editTenantPhone, setEditTenantPhone] = useState('');
     const [editTenantCity, setEditTenantCity] = useState('');
     const [editTenantPassword, setEditTenantPassword] = useState('');
+
+    // Estados para a Modal de Baixa de Pix
+    const [pixModalTenant, setPixModalTenant] = useState<Corretor | null>(null);
+    const [pixAmount, setPixAmount] = useState('119.90');
+    const [pixPaymentDate, setPixPaymentDate] = useState('');
 
     const [loading, setLoading] = useState(true);
     const [errorMsg, setErrorMsg] = useState<string | null>(null);
@@ -134,6 +140,36 @@ export default function AdminMasterDashboard() {
         }
     };
 
+    const handleConfirmPixBaixa = async (e: React.FormEvent) => {
+        e.preventDefault();
+        if (!pixModalTenant) return;
+
+        try {
+            const res = await fetch(`/api/admin/tenants?id=${pixModalTenant._id}`, {
+                method: 'PUT',
+                headers: {
+                    'Content-Type': 'application/json',
+                    Authorization: `Bearer ${localStorage.getItem('token')}`
+                },
+                body: JSON.stringify({
+                    action: 'pix_baixa',
+                    paymentDate: pixPaymentDate
+                })
+            });
+
+            if (res.ok) {
+                alert('Baixa de Pix realizada com sucesso! Vencimento estendido por mais 1 ano.');
+                setPixModalTenant(null);
+                verificarAcessoEPuxarDados();
+            } else {
+                const errData = await res.json();
+                alert(errData.message || 'Erro ao processar baixa do Pix.');
+            }
+        } catch (error) {
+            alert('Falha ao conectar ao servidor para efetuar baixa do Pix.');
+        }
+    };
+
     const handleDeleteItem = async (id: string) => {
         if (!confirm('Tem certeza de que deseja excluir permanentemente este registro do sistema?')) return;
 
@@ -152,7 +188,7 @@ export default function AdminMasterDashboard() {
     };
 
     const handleDeleteTenant = async (id: string) => {
-        if (!confirm('ATENÇÃO CRÍTICA:\n\nExcluir este cliente removerá sua conta e TODOS os registros cadastrados por ele automaticamente.\Deseja prosseguir?')) return;
+        if (!confirm('ATENÇÃO CRÍTICA:\n\nExcluir este cliente removerá sua conta e TODOS os registros cadastrados por ele automaticamente. Deseja prosseguir?')) return;
 
         try {
             const res = await fetch(`/api/admin/tenants?id=${id}`, {
@@ -196,7 +232,6 @@ export default function AdminMasterDashboard() {
         }
     };
 
-    // Helper seguro para formatar e calcular vencimento sem erro de timezone
     const getExpirationDetails = (tenant: Corretor) => {
         const expStr = tenant.subscriptionExpiresAt
             ? tenant.subscriptionExpiresAt.split('T')[0]
@@ -245,6 +280,72 @@ export default function AdminMasterDashboard() {
 
     return (
         <div className="min-h-screen bg-gray-900 text-gray-100 p-6 font-sans">
+            {/* Modal de Baixa de Pix */}
+            {pixModalTenant && (
+                <div className="fixed inset-0 bg-black/80 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+                    <div className="bg-gray-800 border border-gray-700 rounded-2xl p-6 max-w-md w-full text-gray-100 relative shadow-2xl">
+                        <button
+                            onClick={() => setPixModalTenant(null)}
+                            className="absolute top-4 right-4 text-gray-400 hover:text-white text-2xl font-bold"
+                        >
+                            &times;
+                        </button>
+                        <h3 className="text-xl font-bold text-emerald-400 mb-1">💳 Baixa de Pix Recebido</h3>
+                        <p className="text-xs text-gray-400 mb-4">Confirme os dados para estender a anuidade por mais 1 ano.</p>
+
+                        <form onSubmit={handleConfirmPixBaixa} className="space-y-3 text-sm">
+                            <div className="bg-gray-900/60 p-3 rounded-lg border border-gray-700/60 space-y-1.5 font-mono text-xs">
+                                <p><span className="text-gray-400">ID:</span> <span className="text-gray-200">{pixModalTenant._id}</span></p>
+                                <p><span className="text-gray-400">Nome:</span> <span className="text-white font-bold">{pixModalTenant.name}</span></p>
+                                <p><span className="text-gray-400">Fone:</span> <span className="text-blue-400">{pixModalTenant.phone}</span></p>
+                                <p><span className="text-gray-400">E-mail:</span> <span className="text-gray-300">{pixModalTenant.email}</span></p>
+                            </div>
+
+                            <div>
+                                <label className="block text-xs uppercase tracking-wider font-semibold text-gray-400 mb-1">
+                                    Valor do Pix (R$)
+                                </label>
+                                <input
+                                    type="text"
+                                    value={pixAmount}
+                                    onChange={(e) => setPixAmount(e.target.value)}
+                                    className="w-full bg-gray-900 border border-gray-700 rounded-lg p-2.5 text-sm text-white focus:outline-none focus:ring-2 focus:ring-emerald-500 font-mono"
+                                />
+                            </div>
+
+                            <div>
+                                <label className="block text-xs uppercase tracking-wider font-semibold text-gray-400 mb-1">
+                                    Data do Recebimento
+                                </label>
+                                <input
+                                    type="date"
+                                    value={pixPaymentDate}
+                                    onChange={(e) => setPixPaymentDate(e.target.value)}
+                                    required
+                                    className="w-full bg-gray-900 border border-gray-700 rounded-lg p-2.5 text-sm text-white focus:outline-none focus:ring-2 focus:ring-emerald-500 font-mono"
+                                />
+                            </div>
+
+                            <div className="flex justify-end gap-2 pt-3">
+                                <button
+                                    type="button"
+                                    onClick={() => setPixModalTenant(null)}
+                                    className="bg-gray-700 text-gray-300 px-4 py-2 rounded-lg text-xs font-semibold hover:bg-gray-600 transition"
+                                >
+                                    Cancelar
+                                </button>
+                                <button
+                                    type="submit"
+                                    className="bg-emerald-600 hover:bg-emerald-500 text-white font-bold px-4 py-2 rounded-lg text-xs transition shadow-md"
+                                >
+                                    Confirmar Baixa (+1 Ano)
+                                </button>
+                            </div>
+                        </form>
+                    </div>
+                </div>
+            )}
+
             {editingTenantLimits && (
                 <div className="fixed inset-0 bg-black/80 backdrop-blur-sm z-50 flex items-center justify-center p-4">
                     <div className="bg-gray-800 border border-gray-700 rounded-2xl p-6 max-w-xl w-full text-gray-100 relative shadow-2xl max-h-[90vh] overflow-y-auto">
@@ -260,9 +361,7 @@ export default function AdminMasterDashboard() {
                         <form onSubmit={handleSaveTenant} className="space-y-4">
                             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                                 <div>
-                                    <label className="block text-xs uppercase tracking-wider font-semibold text-gray-400 mb-1">
-                                        Nome Completo
-                                    </label>
+                                    <label className="block text-xs uppercase tracking-wider font-semibold text-gray-400 mb-1">Nome Completo</label>
                                     <input
                                         type="text"
                                         value={editTenantName}
@@ -272,9 +371,7 @@ export default function AdminMasterDashboard() {
                                     />
                                 </div>
                                 <div>
-                                    <label className="block text-xs uppercase tracking-wider font-semibold text-gray-400 mb-1">
-                                        E-mail
-                                    </label>
+                                    <label className="block text-xs uppercase tracking-wider font-semibold text-gray-400 mb-1">E-mail</label>
                                     <input
                                         type="email"
                                         value={editTenantEmail}
@@ -287,9 +384,7 @@ export default function AdminMasterDashboard() {
 
                             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                                 <div>
-                                    <label className="block text-xs uppercase tracking-wider font-semibold text-gray-400 mb-1">
-                                        Telefone / WhatsApp
-                                    </label>
+                                    <label className="block text-xs uppercase tracking-wider font-semibold text-gray-400 mb-1">Telefone / WhatsApp</label>
                                     <input
                                         type="text"
                                         value={editTenantPhone}
@@ -299,9 +394,7 @@ export default function AdminMasterDashboard() {
                                     />
                                 </div>
                                 <div>
-                                    <label className="block text-xs uppercase tracking-wider font-semibold text-gray-400 mb-1">
-                                        Cidade (Opcional)
-                                    </label>
+                                    <label className="block text-xs uppercase tracking-wider font-semibold text-gray-400 mb-1">Cidade (Opcional)</label>
                                     <input
                                         type="text"
                                         value={editTenantCity}
@@ -312,9 +405,7 @@ export default function AdminMasterDashboard() {
                             </div>
 
                             <div>
-                                <label className="block text-xs uppercase tracking-wider font-semibold text-amber-400 mb-1">
-                                    Nova Senha (Deixe em branco para manter a atual)
-                                </label>
+                                <label className="block text-xs uppercase tracking-wider font-semibold text-amber-400 mb-1">Nova Senha (Deixe em branco para manter a atual)</label>
                                 <input
                                     type="text"
                                     value={editTenantPassword}
@@ -326,9 +417,7 @@ export default function AdminMasterDashboard() {
 
                             <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 pt-2 border-t border-gray-700">
                                 <div>
-                                    <label className="block text-xs uppercase tracking-wider font-semibold text-gray-400 mb-1">
-                                        Máx. Registros
-                                    </label>
+                                    <label className="block text-xs uppercase tracking-wider font-semibold text-gray-400 mb-1">Máx. Registros</label>
                                     <input
                                         type="number"
                                         min="1"
@@ -339,9 +428,7 @@ export default function AdminMasterDashboard() {
                                     />
                                 </div>
                                 <div>
-                                    <label className="block text-xs uppercase tracking-wider font-semibold text-gray-400 mb-1">
-                                        Máx. Fotos/Reg.
-                                    </label>
+                                    <label className="block text-xs uppercase tracking-wider font-semibold text-gray-400 mb-1">Máx. Fotos/Reg.</label>
                                     <input
                                         type="number"
                                         min="1"
@@ -352,9 +439,7 @@ export default function AdminMasterDashboard() {
                                     />
                                 </div>
                                 <div>
-                                    <label className="block text-xs uppercase tracking-wider font-semibold text-gray-400 mb-1">
-                                        Vencimento
-                                    </label>
+                                    <label className="block text-xs uppercase tracking-wider font-semibold text-gray-400 mb-1">Vencimento</label>
                                     <input
                                         type="date"
                                         value={limitSubscriptionExpiresAt}
@@ -601,7 +686,17 @@ export default function AdminMasterDashboard() {
                                                     </div>
                                                 </td>
                                                 <td className="p-4 text-right whitespace-nowrap">
-                                                    <div className="inline-flex gap-2">
+                                                    <div className="inline-flex gap-1.5 flex-wrap justify-end">
+                                                        <button
+                                                            onClick={() => {
+                                                                setPixModalTenant(t);
+                                                                setPixPaymentDate(new Date().toISOString().split('T')[0]);
+                                                                setPixAmount('119.90');
+                                                            }}
+                                                            className="bg-emerald-600 hover:bg-emerald-700 text-white px-3 py-1.5 rounded-lg text-xs font-bold transition shadow"
+                                                        >
+                                                            💳 Baixar Pix
+                                                        </button>
                                                         <button
                                                             onClick={() => {
                                                                 setEditingTenantLimits(t);
@@ -616,13 +711,13 @@ export default function AdminMasterDashboard() {
                                                             }}
                                                             className="bg-blue-500/10 hover:bg-blue-600 text-blue-400 hover:text-white border border-blue-500/30 px-3 py-1.5 rounded-lg text-xs font-bold transition"
                                                         >
-                                                            Editar Cadastro
+                                                            Editar
                                                         </button>
                                                         <button
                                                             onClick={() => handleDeleteTenant(t._id)}
                                                             className="bg-red-600 hover:bg-red-700 text-white px-3 py-1.5 rounded-lg text-xs font-bold transition shadow"
                                                         >
-                                                            Banir / Deletar
+                                                            Banir
                                                         </button>
                                                     </div>
                                                 </td>

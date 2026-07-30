@@ -53,7 +53,7 @@ export async function PUT(request: Request) {
         if (!id) return NextResponse.json({ message: "ID do cliente não fornecido." }, { status: 400 });
 
         const body = await request.json();
-        const { name, email, phone, city, password, maxItems, maxImagesPerItem, subscriptionExpiresAt } = body;
+        const { action, name, email, phone, city, password, maxItems, maxImagesPerItem, subscriptionExpiresAt, paymentDate } = body;
 
         await dbConnect();
 
@@ -62,7 +62,35 @@ export async function PUT(request: Request) {
             return NextResponse.json({ message: "Cliente não encontrado." }, { status: 404 });
         }
 
-        // Atualiza campos cadastrais se fornecidos
+        // Lógica robusta para Baixa de Pix (Adicionar exatamente 1 ano em UTC)
+        if (action === 'pix_baixa') {
+            const dateStr = paymentDate || new Date().toISOString().split('T')[0];
+            const [y, m, d] = dateStr.split('-').map(Number);
+
+            // Cria a data base em UTC a partir da data informada
+            let baseDate = new Date(Date.UTC(y, m - 1, d));
+
+            if (tenant.subscriptionExpiresAt) {
+                const currentExp = new Date(tenant.subscriptionExpiresAt);
+                // Se a vigência atual for superior à data do pagamento (renovação antecipada), soma em cima dela
+                if (currentExp > baseDate) {
+                    baseDate = new Date(currentExp.getTime());
+                }
+            }
+
+            // Adiciona exatamente 1 ano de forma segura via UTC
+            baseDate.setUTCFullYear(baseDate.getUTCFullYear() + 1);
+
+            tenant.subscriptionExpiresAt = baseDate;
+            tenant.isAnuidadePaid = true;
+
+            await tenant.save();
+
+            const updatedTenant = await Tenant.findById(id).select('-passwordHash');
+            return NextResponse.json(updatedTenant, { status: 200 });
+        }
+
+        // Atualização comum de cadastro / limites / senha
         if (name !== undefined) tenant.name = name;
         if (email !== undefined) tenant.email = email;
         if (phone !== undefined) tenant.phone = phone;
@@ -70,14 +98,12 @@ export async function PUT(request: Request) {
         if (maxItems !== undefined) tenant.maxItems = Number(maxItems);
         if (maxImagesPerItem !== undefined) tenant.maxImagesPerItem = Number(maxImagesPerItem);
 
-        // Tratamento correto de data local (evita o recuo de 1 dia por fuso UTC)
         if (subscriptionExpiresAt) {
             const dateOnly = subscriptionExpiresAt.split('T')[0];
             const [y, m, d] = dateOnly.split('-').map(Number);
-            tenant.subscriptionExpiresAt = new Date(y, m - 1, d);
+            tenant.subscriptionExpiresAt = new Date(Date.UTC(y, m - 1, d));
         }
 
-        // Se uma nova senha foi informada, gera o hash seguro
         if (password && password.trim() !== '') {
             const salt = await bcrypt.genSalt(10);
             tenant.passwordHash = await bcrypt.hash(password, salt);

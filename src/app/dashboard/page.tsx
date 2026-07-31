@@ -12,6 +12,7 @@ import DashboardHeader from './components/DashboardHeader';
 import ShareLinkBox from './components/ShareLinkBox';
 import ItemForm from './components/ItemForm';
 import ItemCard from './components/ItemCard';
+import PixModal from '@/app/dashboard/components/PixModal'; // Importado para permitir o pagamento direto pelo aviso
 
 export default function Dashboard() {
     const [items, setItems] = useState<Item[]>([]);
@@ -37,7 +38,8 @@ export default function Dashboard() {
     // Estado da Validade/Expiração da conta/plano
     const [tenantExpirationDate, setTenantExpirationDate] = useState<string | null>(null);
 
-    // Estados do Perfil
+    // Estados do Perfil e ID do Tenant para o Pix
+    const [tenantId, setTenantId] = useState('');
     const [tenantName, setTenantName] = useState('');
     const [tenantEmail, setTenantEmail] = useState('');
     const [tenantPhone, setTenantPhone] = useState('');
@@ -47,6 +49,9 @@ export default function Dashboard() {
     const [tenantPassword, setTenantPassword] = useState('');
     const [isProfileModalOpen, setIsProfileModalOpen] = useState(false);
     const [isSavingProfile, setIsSavingProfile] = useState(false);
+
+    // Estado para o Modal do Pix no Dashboard
+    const [isPixModalOpen, setIsPixModalOpen] = useState(false);
 
     // Estado para gerenciar modal de visualização expandida
     const [selectedVisualizingItem, setSelectedVisualizingItem] = useState<Item | null>(null);
@@ -59,10 +64,11 @@ export default function Dashboard() {
 
     useEffect(() => {
         const token = localStorage.getItem('token');
-        const tenantId = localStorage.getItem('tenantId');
-        if (!token || !tenantId) return router.push('/');
+        const storedTenantId = localStorage.getItem('tenantId');
+        if (!token || !storedTenantId) return router.push('/');
 
-        setShareLink(`${window.location.origin}/share/${tenantId}`);
+        setTenantId(storedTenantId);
+        setShareLink(`${window.location.origin}/share/${storedTenantId}`);
         fetchItems();
         fetchProfile();
     }, []);
@@ -96,13 +102,11 @@ export default function Dashboard() {
                 setTenantWebsiteLink(data.websiteLink || '');
                 setTenantBusinessCardLink(data.businessCardLink || '');
 
-                // Mapeia o campo correto retornado da API do tenant
                 const expirationField = data.subscriptionExpiresAt || data.expirationDate || data.validity;
                 if (expirationField) {
                     setTenantExpirationDate(expirationField);
                 }
 
-                // Grava os limites vindos do banco de dados do cliente
                 if (data.maxItems !== undefined) setMaxItems(data.maxItems);
                 if (data.maxImagesPerItem !== undefined) setMaxImagesPerItem(data.maxImagesPerItem);
             }
@@ -111,23 +115,20 @@ export default function Dashboard() {
         }
     };
 
-    // ✅ CORREÇÃO: Converte qualquer string de data sem perder 1 dia pelo fuso horário (UTC vs GMT-3)
     const parseDateSafely = (dateStr: string | null): Date | null => {
         if (!dateStr) return null;
 
-        // Trata formato ISO/YYYY-MM-DD (ex: "2026-07-30" ou "2026-07-30T00:00:00.000Z")
         if (typeof dateStr === 'string' && dateStr.includes('-')) {
             const cleanStr = dateStr.split('T')[0];
             const parts = cleanStr.split('-');
             if (parts.length === 3) {
                 const year = Number(parts[0]);
-                const month = Number(parts[1]) - 1; // Mês no JS é 0-indexed
+                const month = Number(parts[1]) - 1;
                 const day = Number(parts[2]);
                 return new Date(year, month, day);
             }
         }
 
-        // Trata formato DD/MM/YYYY
         if (typeof dateStr === 'string' && dateStr.includes('/')) {
             const parts = dateStr.split('/');
             if (parts.length === 3) {
@@ -139,40 +140,37 @@ export default function Dashboard() {
         return isNaN(parsed.getTime()) ? null : parsed;
     };
 
-    // ✅ CORREÇÃO: Lógica ajustada para calcular o Período de Carência (10 dias) sem conflitos
+    // ✅ Lógica ajustada para o Período de Carência exato de 7 dias
     const getGracePeriodInfo = () => {
         if (!tenantExpirationDate) return { isInGracePeriod: false, daysRemaining: 0, isFullyExpired: false };
 
         const expDate = parseDateSafely(tenantExpirationDate);
         if (!expDate) return { isInGracePeriod: false, daysRemaining: 0, isFullyExpired: false };
 
-        // Normaliza para comparar apenas a data, sem considerar hora
         const today = new Date();
         today.setHours(0, 0, 0, 0);
 
         const exp = new Date(expDate);
         exp.setHours(0, 0, 0, 0);
 
-        // Se a data de hoje for menor ou igual à data de vencimento, o plano está em dia
         if (today <= exp) {
             return { isInGracePeriod: false, daysRemaining: 0, isFullyExpired: false };
         }
 
-        // Calcula a diferença de dias após o vencimento
         const diffTime = today.getTime() - exp.getTime();
         const diffDays = Math.floor(diffTime / (1000 * 60 * 60 * 24));
 
-        // Venceu e está dentro dos 10 dias de carência
-        if (diffDays > 0 && diffDays <= 10) {
+        // Venceu e está dentro dos 7 dias de carência
+        if (diffDays > 0 && diffDays <= 7) {
             return {
                 isInGracePeriod: true,
-                daysRemaining: 10 - diffDays + 1,
+                daysRemaining: 7 - diffDays + 1,
                 isFullyExpired: false
             };
         }
 
-        // Passaram-se mais de 10 dias de carência (bloqueio total)
-        if (diffDays > 10) {
+        // Passaram-se mais de 7 dias de carência (bloqueio total)
+        if (diffDays > 7) {
             return {
                 isInGracePeriod: false,
                 daysRemaining: 0,
@@ -191,7 +189,7 @@ export default function Dashboard() {
         if (isLoading) return;
 
         if (isPlanExpired) {
-            alert('Sua assinatura / acesso está expirado. Por favor, entre em contato para renovar seu plano.');
+            alert('Sua assinatura / acesso está expirado. Por favor, realize o pagamento via Pix para renovar seu plano.');
             return;
         }
 
@@ -400,7 +398,6 @@ export default function Dashboard() {
     const cleanPhone = tenantPhone.replace(/\D/g, '');
     const isMasterAdmin = ['18997901236', '18997261236', '5518997901236', '5518997261236'].includes(cleanPhone);
 
-    // ✅ CORREÇÃO: Formatação exata da data de vencimento sem alteração por fuso horário
     const formattedExpirationDate = tenantExpirationDate
         ? (() => {
             const d = parseDateSafely(tenantExpirationDate);
@@ -451,7 +448,17 @@ export default function Dashboard() {
                 isSavingProfile={isSavingProfile}
             />
 
-            {/* 4. CABEÇALHO */}
+            {/* 4. MODAL DO PIX */}
+            <PixModal
+                isOpen={isPixModalOpen}
+                onClose={() => setIsPixModalOpen(false)}
+                tenantId={tenantId}
+                tenantName={tenantName}
+                tenantPhone={tenantPhone}
+                tenantEmail={tenantEmail}
+            />
+
+            {/* 5. CABEÇALHO */}
             <DashboardHeader
                 isMasterAdmin={isMasterAdmin}
                 tenantName={tenantName}
@@ -459,58 +466,53 @@ export default function Dashboard() {
                 onOpenProfile={() => setIsProfileModalOpen(true)}
             />
 
-            {/* AVISO FIXO: APENAS DURANTE O PERÍODO DE CARÊNCIA DOS 10 DIAS APÓS O VENCIMENTO */}
+            {/* AVISO DE CARÊNCIA DE 7 DIAS COM BOTÃO PARA GERAR O QR CODE PIX */}
             {graceInfo.isInGracePeriod && (
                 <div className="max-w-5xl mx-auto mb-6 p-4 rounded-xl border bg-amber-50 border-amber-300 text-amber-900 dark:bg-amber-950/60 dark:border-amber-700 dark:text-amber-200 shadow-sm flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 transition-colors">
                     <div className="flex items-center gap-3">
                         <span className="text-2xl">⚠️</span>
                         <div>
-                            <p className="font-bold text-base">Atenção: Seu plano está no período de carência!</p>
+                            <p className="font-bold text-base">Atenção: Período de carência ativo!</p>
                             <p className="text-sm text-amber-800 dark:text-amber-300">
-                                Seu plano venceu em <span className="font-semibold">{formattedExpirationDate}</span>. Restam <strong className="underline decoration-amber-500 font-extrabold">{graceInfo.daysRemaining} {graceInfo.daysRemaining === 1 ? 'dia' : 'dias'}</strong> de carência antes do bloqueio total dos recursos.
+                                Sua assinatura venceu em <span className="font-semibold">{formattedExpirationDate}</span>. Você tem <strong className="underline decoration-amber-500 font-extrabold">{graceInfo.daysRemaining} {graceInfo.daysRemaining === 1 ? 'dia' : 'dias'}</strong> restantes para regularizar sua anuidade e evitar o bloqueio total.
                             </p>
                         </div>
                     </div>
-                    <a
-                        href="https://wa.me/5518997261236?text=Ol%C3%A1%2C%20gostaria%20de%20renovar%20meu%20plano"
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        className="w-full sm:w-auto text-center px-4 py-2.5 bg-amber-600 hover:bg-amber-700 text-white font-semibold rounded-lg text-sm shadow transition-colors flex items-center justify-center gap-2 shrink-0"
+                    <button
+                        type="button"
+                        onClick={() => setIsPixModalOpen(true)}
+                        className="w-full sm:w-auto text-center px-5 py-2.5 bg-emerald-600 hover:bg-emerald-700 text-white font-bold rounded-lg text-sm shadow transition-colors flex items-center justify-center gap-2 shrink-0 cursor-pointer"
                     >
-                        <svg className="w-4 h-4 fill-current" viewBox="0 0 24 24">
-                            <path d="M.057 24l1.687-6.163c-1.041-1.804-1.588-3.849-1.587-5.946.003-6.556 5.338-11.891 11.893-11.891 3.181.001 6.167 1.24 8.413 3.488 2.245 2.248 3.481 5.236 3.48 8.414-.003 6.557-5.338 11.892-11.892-1.99-.001-3.951-.5-5.688-1.448l-6.305 1.654zm6.597-3.807c1.676.995 3.276 1.591 5.392 1.592 5.448 0 9.886-4.434 9.889-9.885.002-5.462-4.415-9.89-9.881-9.892-5.452 0-9.887 4.434-9.889 9.884-.001 2.225.651 3.891 1.746 5.634l-.999 3.648 3.742-.981zm11.387-5.464c-.074-.124-.272-.198-.57-.347-.297-.149-1.758-.868-2.031-.967-.272-.099-.47-.149-.669.149-.198.297-.768.967-.941 1.165-.173.198-.347.223-.644.074-.297-.149-1.255-.462-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.297-.347.446-.521.151-.172.2-.296.3-.495.099-.198.05-.372-.025-.521-.075-.148-.669-1.611-.916-2.206-.242-.579-.487-.501-.669-.51l-.57-.01c-.198 0-.52.074-.792.372s-1.04 1.016-1.04 2.479 1.065 2.876 1.213 3.074c.149.198 2.095 3.2 5.076 4.487.709.306 1.263.489 1.694.626.712.226 1.36.194 1.872.118.571-.085 1.758-.719 2.006-1.413.248-.695.248-1.29.173-1.414z" />
-                        </svg>
-                        Renovar Assinatura (18) 99726-1236
-                    </a>
+                        💳 Pagar Anuidade via Pix (R$ 119,90)
+                    </button>
                 </div>
             )}
 
-            {/* AVISO DE CONTA COMPLETAMENTE EXPIRADA (APÓS 10 DIAS) */}
+            {/* AVISO DE CONTA COMPLETAMENTE EXPIRADA (APÓS 7 DIAS) */}
             {isPlanExpired && (
                 <div className="max-w-5xl mx-auto mb-6 p-4 rounded-xl border bg-red-50 border-red-300 text-red-900 dark:bg-red-950/60 dark:border-red-700 dark:text-red-200 shadow-sm flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 transition-colors">
                     <div className="flex items-center gap-3">
                         <span className="text-2xl">🚫</span>
                         <div>
-                            <p className="font-bold text-base">Acesso Bloqueado: Período de Carência Encerrado!</p>
+                            <p className="font-bold text-base">Acesso Bloqueado: Prazo de Carência Expirado!</p>
                             <p className="text-sm text-red-800 dark:text-red-300">
-                                Seu plano venceu em <span className="font-semibold">{formattedExpirationDate}</span> e o prazo de 10 dias de carência expirou. Novas edições e criações estão bloqueadas.
+                                O prazo de 7 dias de carência após o vencimento em <span className="font-semibold">{formattedExpirationDate}</span> encerrou. Realize o pagamento para desbloquear imediatamente.
                             </p>
                         </div>
                     </div>
-                    <a
-                        href="https://wa.me/5518997261236?text=Ol%C3%A1%2C%20meu%20plano%20expirou%20e%20gostaria%20de%20renovar"
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        className="w-full sm:w-auto text-center px-4 py-2.5 bg-red-600 hover:bg-red-700 text-white font-semibold rounded-lg text-sm shadow transition-colors flex items-center justify-center gap-2 shrink-0"
+                    <button
+                        type="button"
+                        onClick={() => setIsPixModalOpen(true)}
+                        className="w-full sm:w-auto text-center px-5 py-2.5 bg-emerald-600 hover:bg-emerald-700 text-white font-bold rounded-lg text-sm shadow transition-colors flex items-center justify-center gap-2 shrink-0 cursor-pointer"
                     >
-                        Entrar em Contato (18) 99726-1236
-                    </a>
+                        💳 Regularizar via Pix (R$ 119,90)
+                    </button>
                 </div>
             )}
 
             <main className="max-w-5xl mx-auto grid grid-cols-1 md:grid-cols-3 gap-8">
 
-                {/* 5. FORMULÁRIO LATERAL DE CRIAÇÃO/EDIÇÃO */}
+                {/* FORMULÁRIO LATERAL DE CRIAÇÃO/EDIÇÃO */}
                 <ItemForm
                     editingId={editingId}
                     isLimitReached={isLimitReached || isPlanExpired}
@@ -538,7 +540,7 @@ export default function Dashboard() {
                 {/* CONTAINER DA LISTAGEM DIREITA */}
                 <div className="bg-white dark:bg-gray-900 p-6 rounded-xl shadow-sm border border-gray-200 dark:border-gray-800 md:col-span-2 transition-colors duration-200">
 
-                    {/* 6. COMPARTILHAMENTO DE LINKS */}
+                    {/* COMPARTILHAMENTO DE LINKS */}
                     <ShareLinkBox
                         shareLink={shareLink}
                         copied={copied}
@@ -557,7 +559,6 @@ export default function Dashboard() {
                     ) : (
                         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                             {items.map((item) => (
-                                /* 7. CARD INDIVIDUAL DO ITEM */
                                 <ItemCard
                                     key={item._id}
                                     item={item}

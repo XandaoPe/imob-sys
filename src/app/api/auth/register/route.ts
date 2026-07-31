@@ -3,6 +3,23 @@ import connectDB from '@/lib/mongodb';
 import Tenant from '@/models/Tenant';
 import bcrypt from 'bcryptjs';
 
+// Helper para obter a data atual no fuso de Brasília sem somar dias no registro
+function getBrasiliaCurrentDate(): Date {
+    const now = new Date();
+    const options: Intl.DateTimeFormatOptions = {
+        timeZone: 'America/Sao_Paulo',
+        year: 'numeric',
+        month: '2-digit',
+        day: '2-digit'
+    };
+    const parts = new Intl.DateTimeFormat('en-CA', options).formatToParts(now);
+    const year = parseInt(parts.find(p => p.type === 'year')?.value || '2026', 10);
+    const month = parseInt(parts.find(p => p.type === 'month')?.value || '1', 10) - 1;
+    const day = parseInt(parts.find(p => p.type === 'day')?.value || '1', 10);
+
+    return new Date(Date.UTC(year, month, day, 3, 0, 0));
+}
+
 export async function POST(req: Request) {
     try {
         await connectDB();
@@ -29,10 +46,7 @@ export async function POST(req: Request) {
         }
 
         const hashedPassword = await bcrypt.hash(password, 10);
-
-        // 7 dias de teste gratuito
-        const trialExpiration = new Date();
-        trialExpiration.setDate(trialExpiration.getDate() + 7);
+        const currentDate = getBrasiliaCurrentDate();
 
         const newTenant = new Tenant({
             name: name.trim(),
@@ -43,7 +57,7 @@ export async function POST(req: Request) {
             websiteLink: websiteLink ? websiteLink.trim() : '',
             businessCardLink: businessCardLink ? businessCardLink.trim() : '',
             isAnuidadePaid: false,
-            subscriptionExpiresAt: trialExpiration
+            subscriptionExpiresAt: currentDate // Inicia na data de criação, abrindo os 7 dias de carência iniciais
         });
 
         await newTenant.save();

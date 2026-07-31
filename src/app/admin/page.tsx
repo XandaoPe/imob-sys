@@ -1,6 +1,11 @@
 'use client';
 import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
+import PixModal from './components/PixModal';
+import EditTenantModal from './components/EditTenantModal';
+import EditItemModal from './components/EditItemModal';
+import ItemsTable from './components/ItemsTable';
+import TenantsTable from './components/TenantsTable';
 
 interface Corretor {
     _id: string;
@@ -49,7 +54,6 @@ export default function AdminMasterDashboard() {
     const [editTenantCity, setEditTenantCity] = useState('');
     const [editTenantPassword, setEditTenantPassword] = useState('');
 
-    // Estados para a Modal de Baixa de Pix
     const [pixModalTenant, setPixModalTenant] = useState<Corretor | null>(null);
     const [pixAmount, setPixAmount] = useState('119.90');
     const [pixPaymentDate, setPixPaymentDate] = useState('');
@@ -280,246 +284,53 @@ export default function AdminMasterDashboard() {
 
     return (
         <div className="min-h-screen bg-gray-900 text-gray-100 p-6 font-sans">
-            {/* Modal de Baixa de Pix */}
             {pixModalTenant && (
-                <div className="fixed inset-0 bg-black/80 backdrop-blur-sm z-50 flex items-center justify-center p-4">
-                    <div className="bg-gray-800 border border-gray-700 rounded-2xl p-6 max-w-md w-full text-gray-100 relative shadow-2xl">
-                        <button
-                            onClick={() => setPixModalTenant(null)}
-                            className="absolute top-4 right-4 text-gray-400 hover:text-white text-2xl font-bold"
-                        >
-                            &times;
-                        </button>
-                        <h3 className="text-xl font-bold text-emerald-400 mb-1">💳 Baixa de Pix Recebido</h3>
-                        <p className="text-xs text-gray-400 mb-4">Confirme os dados para estender a anuidade por mais 1 ano.</p>
-
-                        <form onSubmit={handleConfirmPixBaixa} className="space-y-3 text-sm">
-                            <div className="bg-gray-900/60 p-3 rounded-lg border border-gray-700/60 space-y-1.5 font-mono text-xs">
-                                <p><span className="text-gray-400">ID:</span> <span className="text-gray-200">{pixModalTenant._id}</span></p>
-                                <p><span className="text-gray-400">Nome:</span> <span className="text-white font-bold">{pixModalTenant.name}</span></p>
-                                <p><span className="text-gray-400">Fone:</span> <span className="text-blue-400">{pixModalTenant.phone}</span></p>
-                                <p><span className="text-gray-400">E-mail:</span> <span className="text-gray-300">{pixModalTenant.email}</span></p>
-                            </div>
-
-                            <div>
-                                <label className="block text-xs uppercase tracking-wider font-semibold text-gray-400 mb-1">
-                                    Valor do Pix (R$)
-                                </label>
-                                <input
-                                    type="text"
-                                    value={pixAmount}
-                                    onChange={(e) => setPixAmount(e.target.value)}
-                                    className="w-full bg-gray-900 border border-gray-700 rounded-lg p-2.5 text-sm text-white focus:outline-none focus:ring-2 focus:ring-emerald-500 font-mono"
-                                />
-                            </div>
-
-                            <div>
-                                <label className="block text-xs uppercase tracking-wider font-semibold text-gray-400 mb-1">
-                                    Data do Recebimento
-                                </label>
-                                <input
-                                    type="date"
-                                    value={pixPaymentDate}
-                                    onChange={(e) => setPixPaymentDate(e.target.value)}
-                                    required
-                                    className="w-full bg-gray-900 border border-gray-700 rounded-lg p-2.5 text-sm text-white focus:outline-none focus:ring-2 focus:ring-emerald-500 font-mono"
-                                />
-                            </div>
-
-                            <div className="flex justify-end gap-2 pt-3">
-                                <button
-                                    type="button"
-                                    onClick={() => setPixModalTenant(null)}
-                                    className="bg-gray-700 text-gray-300 px-4 py-2 rounded-lg text-xs font-semibold hover:bg-gray-600 transition"
-                                >
-                                    Cancelar
-                                </button>
-                                <button
-                                    type="submit"
-                                    className="bg-emerald-600 hover:bg-emerald-500 text-white font-bold px-4 py-2 rounded-lg text-xs transition shadow-md"
-                                >
-                                    Confirmar Baixa (+1 Ano)
-                                </button>
-                            </div>
-                        </form>
-                    </div>
-                </div>
+                <PixModal
+                    tenant={pixModalTenant}
+                    pixAmount={pixAmount}
+                    setPixAmount={setPixAmount}
+                    pixPaymentDate={pixPaymentDate}
+                    setPixPaymentDate={setPixPaymentDate}
+                    onClose={() => setPixModalTenant(null)}
+                    onSubmit={handleConfirmPixBaixa}
+                />
             )}
 
             {editingTenantLimits && (
-                <div className="fixed inset-0 bg-black/80 backdrop-blur-sm z-50 flex items-center justify-center p-4">
-                    <div className="bg-gray-800 border border-gray-700 rounded-2xl p-6 max-w-xl w-full text-gray-100 relative shadow-2xl max-h-[90vh] overflow-y-auto">
-                        <button
-                            onClick={() => setEditingTenantLimits(null)}
-                            className="absolute top-4 right-4 text-gray-400 hover:text-white text-2xl font-bold"
-                        >
-                            &times;
-                        </button>
-                        <h3 className="text-xl font-bold text-blue-400 mb-1">Editar Cadastro do Cliente (Master)</h3>
-                        <p className="text-xs text-gray-400 mb-4">ID: <strong className="text-gray-200">{editingTenantLimits._id}</strong></p>
-
-                        <form onSubmit={handleSaveTenant} className="space-y-4">
-                            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                                <div>
-                                    <label className="block text-xs uppercase tracking-wider font-semibold text-gray-400 mb-1">Nome Completo</label>
-                                    <input
-                                        type="text"
-                                        value={editTenantName}
-                                        onChange={(e) => setEditTenantName(e.target.value)}
-                                        required
-                                        className="w-full bg-gray-900 border border-gray-700 rounded-lg p-2.5 text-sm text-white focus:outline-none focus:ring-2 focus:ring-blue-500"
-                                    />
-                                </div>
-                                <div>
-                                    <label className="block text-xs uppercase tracking-wider font-semibold text-gray-400 mb-1">E-mail</label>
-                                    <input
-                                        type="email"
-                                        value={editTenantEmail}
-                                        onChange={(e) => setEditTenantEmail(e.target.value)}
-                                        required
-                                        className="w-full bg-gray-900 border border-gray-700 rounded-lg p-2.5 text-sm text-white focus:outline-none focus:ring-2 focus:ring-blue-500"
-                                    />
-                                </div>
-                            </div>
-
-                            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                                <div>
-                                    <label className="block text-xs uppercase tracking-wider font-semibold text-gray-400 mb-1">Telefone / WhatsApp</label>
-                                    <input
-                                        type="text"
-                                        value={editTenantPhone}
-                                        onChange={(e) => setEditTenantPhone(e.target.value)}
-                                        required
-                                        className="w-full bg-gray-900 border border-gray-700 rounded-lg p-2.5 text-sm text-white focus:outline-none focus:ring-2 focus:ring-blue-500"
-                                    />
-                                </div>
-                                <div>
-                                    <label className="block text-xs uppercase tracking-wider font-semibold text-gray-400 mb-1">Cidade (Opcional)</label>
-                                    <input
-                                        type="text"
-                                        value={editTenantCity}
-                                        onChange={(e) => setEditTenantCity(e.target.value)}
-                                        className="w-full bg-gray-900 border border-gray-700 rounded-lg p-2.5 text-sm text-white focus:outline-none focus:ring-2 focus:ring-blue-500"
-                                    />
-                                </div>
-                            </div>
-
-                            <div>
-                                <label className="block text-xs uppercase tracking-wider font-semibold text-amber-400 mb-1">Nova Senha (Deixe em branco para manter a atual)</label>
-                                <input
-                                    type="text"
-                                    value={editTenantPassword}
-                                    onChange={(e) => setEditTenantPassword(e.target.value)}
-                                    placeholder="Digite uma nova senha se desejar redefinir"
-                                    className="w-full bg-gray-900 border border-amber-600/50 rounded-lg p-2.5 text-sm text-white focus:outline-none focus:ring-2 focus:ring-amber-500"
-                                />
-                            </div>
-
-                            <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 pt-2 border-t border-gray-700">
-                                <div>
-                                    <label className="block text-xs uppercase tracking-wider font-semibold text-gray-400 mb-1">Máx. Registros</label>
-                                    <input
-                                        type="number"
-                                        min="1"
-                                        value={limitMaxItems}
-                                        onChange={(e) => setLimitMaxItems(Number(e.target.value))}
-                                        required
-                                        className="w-full bg-gray-900 border border-gray-700 rounded-lg p-2.5 text-sm text-white focus:outline-none focus:ring-2 focus:ring-blue-500"
-                                    />
-                                </div>
-                                <div>
-                                    <label className="block text-xs uppercase tracking-wider font-semibold text-gray-400 mb-1">Máx. Fotos/Reg.</label>
-                                    <input
-                                        type="number"
-                                        min="1"
-                                        value={limitMaxImages}
-                                        onChange={(e) => setLimitMaxImages(Number(e.target.value))}
-                                        required
-                                        className="w-full bg-gray-900 border border-gray-700 rounded-lg p-2.5 text-sm text-white focus:outline-none focus:ring-2 focus:ring-blue-500"
-                                    />
-                                </div>
-                                <div>
-                                    <label className="block text-xs uppercase tracking-wider font-semibold text-gray-400 mb-1">Vencimento</label>
-                                    <input
-                                        type="date"
-                                        value={limitSubscriptionExpiresAt}
-                                        onChange={(e) => setLimitSubscriptionExpiresAt(e.target.value)}
-                                        required
-                                        className="w-full bg-gray-900 border border-gray-700 rounded-lg p-2.5 text-sm text-white focus:outline-none focus:ring-2 focus:ring-blue-500"
-                                    />
-                                </div>
-                            </div>
-
-                            <div className="flex justify-end gap-2 pt-4">
-                                <button
-                                    type="button"
-                                    onClick={() => setEditingTenantLimits(null)}
-                                    className="bg-gray-700 text-gray-300 px-4 py-2 rounded-lg text-xs font-semibold hover:bg-gray-600 transition"
-                                >
-                                    Cancelar
-                                </button>
-                                <button
-                                    type="submit"
-                                    className="bg-blue-600 hover:bg-blue-500 text-white font-bold px-4 py-2 rounded-lg text-xs transition shadow-md"
-                                >
-                                    Salvar Alterações Master
-                                </button>
-                            </div>
-                        </form>
-                    </div>
-                </div>
+                <EditTenantModal
+                    tenantId={editingTenantLimits._id}
+                    editTenantName={editTenantName}
+                    setEditTenantName={setEditTenantName}
+                    editTenantEmail={editTenantEmail}
+                    setEditTenantEmail={setEditTenantEmail}
+                    editTenantPhone={editTenantPhone}
+                    setEditTenantPhone={setEditTenantPhone}
+                    editTenantCity={editTenantCity}
+                    setEditTenantCity={setEditTenantCity}
+                    editTenantPassword={editTenantPassword}
+                    setEditTenantPassword={setEditTenantPassword}
+                    limitMaxItems={limitMaxItems}
+                    setLimitMaxItems={setLimitMaxItems}
+                    limitMaxImages={limitMaxImages}
+                    setLimitMaxImages={setLimitMaxImages}
+                    limitSubscriptionExpiresAt={limitSubscriptionExpiresAt}
+                    setLimitSubscriptionExpiresAt={setLimitSubscriptionExpiresAt}
+                    onClose={() => setEditingTenantLimits(null)}
+                    onSubmit={handleSaveTenant}
+                />
             )}
 
             {editingItem && (
-                <div className="fixed inset-0 bg-black/80 backdrop-blur-sm z-50 flex items-center justify-center p-4">
-                    <div className="bg-gray-800 border border-gray-700 rounded-2xl p-6 max-w-xl w-full text-gray-100 relative shadow-2xl">
-                        <button
-                            onClick={() => setEditingItem(null)}
-                            className="absolute top-4 right-4 text-gray-400 hover:text-white text-2xl font-bold"
-                        >
-                            &times;
-                        </button>
-                        <h3 className="text-xl font-bold text-amber-400 mb-2">Modo Admin: Forçar Edição</h3>
-                        <p className="text-xs text-gray-400 mb-4">Pertence ao cliente: <strong className="text-gray-200">{editingItem.corretor.name}</strong> ({editingItem.corretor.email})</p>
-
-                        <form onSubmit={handleSaveEditItem} className="space-y-4">
-                            <div>
-                                <label className="block text-xs uppercase tracking-wider font-semibold text-gray-400 mb-1">Título do Registro</label>
-                                <input
-                                    type="text"
-                                    value={editTitle}
-                                    onChange={(e) => setEditTitle(e.target.value)}
-                                    required
-                                    className="w-full bg-gray-900 border border-gray-700 rounded-lg p-2.5 text-sm text-white focus:outline-none focus:ring-2 focus:ring-amber-500"
-                                />
-                            </div>
-                            <div>
-                                <label className="block text-xs uppercase tracking-wider font-semibold text-gray-400 mb-1">Descrição</label>
-                                <textarea
-                                    value={editDescription}
-                                    onChange={(e) => setEditDescription(e.target.value)}
-                                    required
-                                    className="w-full bg-gray-900 border border-gray-700 rounded-lg p-2.5 text-sm text-white focus:outline-none focus:ring-2 focus:ring-amber-500 h-32"
-                                />
-                            </div>
-                            <div className="flex justify-end gap-2 pt-2">
-                                <button
-                                    type="button"
-                                    onClick={() => setEditingItem(null)}
-                                    className="bg-gray-700 text-gray-300 px-4 py-2 rounded-lg text-xs font-semibold hover:bg-gray-600 transition"
-                                >
-                                    Cancelar
-                                </button>
-                                <button
-                                    type="submit"
-                                    className="bg-amber-500 hover:bg-amber-600 text-gray-900 font-bold px-4 py-2 rounded-lg text-xs transition shadow-md"
-                                >
-                                    Gravar Alteração Master
-                                </button>
-                            </div>
-                        </form>
-                    </div>
-                </div>
+                <EditItemModal
+                    corretorName={editingItem.corretor.name}
+                    corretorEmail={editingItem.corretor.email}
+                    editTitle={editTitle}
+                    setEditTitle={setEditTitle}
+                    editDescription={editDescription}
+                    setEditDescription={setEditDescription}
+                    onClose={() => setEditingItem(null)}
+                    onSubmit={handleSaveEditItem}
+                />
             )}
 
             <header className="max-w-7xl mx-auto border-b border-gray-800 pb-6 mb-8 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
@@ -577,157 +388,37 @@ export default function AdminMasterDashboard() {
 
             <main className="max-w-7xl mx-auto bg-gray-800 border border-gray-700/60 rounded-xl overflow-hidden shadow-xl">
                 {activeTab === 'items' ? (
-                    <div className="overflow-x-auto">
-                        {items.length === 0 ? (
-                            <p className="p-8 text-center text-sm text-gray-400">Nenhum registro foi postado em nenhuma conta do sistema.</p>
-                        ) : (
-                            <table className="w-full text-left border-collapse">
-                                <thead>
-                                    <tr className="bg-gray-900 border-b border-gray-700 text-xs font-semibold text-gray-400 uppercase tracking-wider">
-                                        <th className="p-4">Capa</th>
-                                        <th className="p-4">Dados do Registro</th>
-                                        <th className="p-4">Cliente Responsável</th>
-                                        <th className="p-4 text-right">Ações de Controle</th>
-                                    </tr>
-                                </thead>
-                                <tbody className="divide-y divide-gray-700/50 text-sm">
-                                    {items.map((item) => (
-                                        <tr key={item._id} className="hover:bg-gray-750/30 transition-colors">
-                                            <td className="p-4 whitespace-nowrap">
-                                                <div className="w-16 h-12 bg-gray-900 border border-gray-700 rounded-md overflow-hidden flex items-center justify-center">
-                                                    {item.images && item.images.length > 0 ? (
-                                                        <img src={item.images[0]} className="w-full h-full object-cover" alt="Thumb" />
-                                                    ) : (
-                                                        <span className="text-[10px] text-gray-500">Sem foto</span>
-                                                    )}
-                                                </div>
-                                            </td>
-                                            <td className="p-4 max-w-sm">
-                                                <p className="font-bold text-white text-base leading-tight">{item.title}</p>
-                                                <p className="text-xs text-gray-400 line-clamp-2 mt-0.5">{item.description}</p>
-                                                <span className="text-[10px] font-mono text-gray-500 block mt-1">ID: {item._id}</span>
-                                            </td>
-                                            <td className="p-4">
-                                                <p className="font-semibold text-gray-200">{item.corretor.name}</p>
-                                                <p className="text-xs text-gray-400 font-mono">{item.corretor.email}</p>
-                                                <p className="text-xs text-blue-400 font-mono">{item.corretor.phone}</p>
-                                            </td>
-                                            <td className="p-4 text-right whitespace-nowrap">
-                                                <div className="inline-flex gap-2">
-                                                    <button
-                                                        onClick={() => {
-                                                            setEditingItem(item);
-                                                            setEditTitle(item.title);
-                                                            setEditDescription(item.description);
-                                                        }}
-                                                        className="bg-amber-500/10 hover:bg-amber-500 text-amber-400 hover:text-gray-900 border border-amber-500/30 px-3 py-1.5 rounded-lg text-xs font-bold transition"
-                                                    >
-                                                        Editar
-                                                    </button>
-                                                    <button
-                                                        onClick={() => handleDeleteItem(item._id)}
-                                                        className="bg-red-500/10 hover:bg-red-600 text-red-400 hover:text-white border border-red-500/30 px-3 py-1.5 rounded-lg text-xs font-medium transition"
-                                                    >
-                                                        Excluir
-                                                    </button>
-                                                </div>
-                                            </td>
-                                        </tr>
-                                    ))}
-                                </tbody>
-                            </table>
-                        )}
-                    </div>
+                    <ItemsTable
+                        items={items}
+                        onEdit={(item) => {
+                            setEditingItem(item);
+                            setEditTitle(item.title);
+                            setEditDescription(item.description);
+                        }}
+                        onDelete={handleDeleteItem}
+                    />
                 ) : (
-                    <div className="overflow-x-auto">
-                        {tenants.length === 0 ? (
-                            <p className="p-8 text-center text-sm text-gray-400">Nenhum cliente cadastrado na plataforma.</p>
-                        ) : (
-                            <table className="w-full text-left border-collapse">
-                                <thead>
-                                    <tr className="bg-gray-900 border-b border-gray-700 text-xs font-semibold text-gray-400 uppercase tracking-wider">
-                                        <th className="p-4">Nome do Cliente</th>
-                                        <th className="p-4">Contato / E-mail</th>
-                                        <th className="p-4">Limites Atuais</th>
-                                        <th className="p-4">Validade / Status</th>
-                                        <th className="p-4 text-right">Ações Críticas</th>
-                                    </tr>
-                                </thead>
-                                <tbody className="divide-y divide-gray-700/50 text-sm">
-                                    {tenants.map((t) => {
-                                        const { formattedDate, isExpired, expStr } = getExpirationDetails(t);
-                                        return (
-                                            <tr key={t._id} className="hover:bg-gray-750/30 transition-colors">
-                                                <td className="p-4 whitespace-nowrap">
-                                                    <p className="font-bold text-white text-base">{t.name}</p>
-                                                    <span className="text-[10px] font-mono text-gray-500">TenantID: {t._id}</span>
-                                                </td>
-                                                <td className="p-4 font-mono text-xs">
-                                                    <p className="text-gray-200">{t.email}</p>
-                                                    <p className="text-blue-400 mt-0.5">{t.phone}</p>
-                                                </td>
-                                                <td className="p-4 text-xs font-mono">
-                                                    <span className="bg-blue-900/40 text-blue-300 border border-blue-800 px-2 py-1 rounded inline-block mb-1">
-                                                        📌 Registro: <strong>{t.maxItems ?? 10}</strong>
-                                                    </span>
-                                                    <br />
-                                                    <span className="bg-emerald-900/40 text-emerald-300 border border-emerald-800 px-2 py-1 rounded inline-block">
-                                                        🖼️ Fotos/Registro: <strong>{t.maxImagesPerItem ?? 4}</strong>
-                                                    </span>
-                                                </td>
-                                                <td className="p-4 text-xs font-mono">
-                                                    <div>
-                                                        <p className={`font-bold ${isExpired ? 'text-red-400' : 'text-emerald-400'}`}>
-                                                            {formattedDate}
-                                                        </p>
-                                                        <span className="text-[10px] text-gray-400">
-                                                            {isExpired ? '⚠️ Vencido' : '✅ Em dia'}
-                                                        </span>
-                                                    </div>
-                                                </td>
-                                                <td className="p-4 text-right whitespace-nowrap">
-                                                    <div className="inline-flex gap-1.5 flex-wrap justify-end">
-                                                        <button
-                                                            onClick={() => {
-                                                                setPixModalTenant(t);
-                                                                setPixPaymentDate(new Date().toISOString().split('T')[0]);
-                                                                setPixAmount('119.90');
-                                                            }}
-                                                            className="bg-emerald-600 hover:bg-emerald-700 text-white px-3 py-1.5 rounded-lg text-xs font-bold transition shadow"
-                                                        >
-                                                            💳 Baixar Pix
-                                                        </button>
-                                                        <button
-                                                            onClick={() => {
-                                                                setEditingTenantLimits(t);
-                                                                setEditTenantName(t.name || '');
-                                                                setEditTenantEmail(t.email || '');
-                                                                setEditTenantPhone(t.phone || '');
-                                                                setEditTenantCity(t.city || '');
-                                                                setEditTenantPassword('');
-                                                                setLimitMaxItems(t.maxItems ?? 10);
-                                                                setLimitMaxImages(t.maxImagesPerItem ?? 4);
-                                                                setLimitSubscriptionExpiresAt(expStr);
-                                                            }}
-                                                            className="bg-blue-500/10 hover:bg-blue-600 text-blue-400 hover:text-white border border-blue-500/30 px-3 py-1.5 rounded-lg text-xs font-bold transition"
-                                                        >
-                                                            Editar
-                                                        </button>
-                                                        <button
-                                                            onClick={() => handleDeleteTenant(t._id)}
-                                                            className="bg-red-600 hover:bg-red-700 text-white px-3 py-1.5 rounded-lg text-xs font-bold transition shadow"
-                                                        >
-                                                            Banir
-                                                        </button>
-                                                    </div>
-                                                </td>
-                                            </tr>
-                                        );
-                                    })}
-                                </tbody>
-                            </table>
-                        )}
-                    </div>
+                    <TenantsTable
+                        tenants={tenants}
+                        getExpirationDetails={getExpirationDetails}
+                        onOpenPixModal={(t) => {
+                            setPixModalTenant(t);
+                            setPixPaymentDate(new Date().toISOString().split('T')[0]);
+                            setPixAmount('119.90');
+                        }}
+                        onOpenEditModal={(t, expStr) => {
+                            setEditingTenantLimits(t);
+                            setEditTenantName(t.name || '');
+                            setEditTenantEmail(t.email || '');
+                            setEditTenantPhone(t.phone || '');
+                            setEditTenantCity(t.city || '');
+                            setEditTenantPassword('');
+                            setLimitMaxItems(t.maxItems ?? 10);
+                            setLimitMaxImages(t.maxImagesPerItem ?? 4);
+                            setLimitSubscriptionExpiresAt(expStr);
+                        }}
+                        onDeleteTenant={handleDeleteTenant}
+                    />
                 )}
             </main>
         </div>

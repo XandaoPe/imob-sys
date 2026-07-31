@@ -14,7 +14,6 @@ export default function LoginForm() {
     const [isSubmitting, setIsSubmitting] = useState(false);
     const [isForgotPasswordOpen, setIsForgotPasswordOpen] = useState(false);
 
-    // Estados para o Pix obrigatório no login se o trial venceu ou para aviso
     const [isPixModalOpen, setIsPixModalOpen] = useState(false);
     const [blockedTenantId, setBlockedTenantId] = useState('');
     const [blockedTenantName, setBlockedTenantName] = useState('');
@@ -46,7 +45,7 @@ export default function LoginForm() {
                 localStorage.setItem('token', data.token);
                 localStorage.setItem('tenantId', data.tenantId);
 
-                // Se houver um aviso de trial/carência vindo do backend
+                // Exibe o aviso apenas se estiver no período de carência de 7 dias após vencer
                 if (data.warning) {
                     setBlockedTenantId(data.tenant?.id || data.tenantId);
                     setBlockedTenantName(data.tenant?.name || '');

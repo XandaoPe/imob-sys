@@ -8,6 +8,21 @@ function escapeRegex(text: string) {
     return text.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
 }
 
+// Helper para obter a data atual no fuso horário do Brasil (America/Sao_Paulo) zerada às 00:00:00
+function getBrasiliaDate(date = new Date()): Date {
+    const options: Intl.DateTimeFormatOptions = {
+        timeZone: 'America/Sao_Paulo',
+        year: 'numeric',
+        month: '2-digit',
+        day: '2-digit'
+    };
+    const parts = new Intl.DateTimeFormat('en-CA', options).formatToParts(date);
+    const year = parts.find(p => p.type === 'year')?.value;
+    const month = parts.find(p => p.type === 'month')?.value;
+    const day = parts.find(p => p.type === 'day')?.value;
+    return new Date(`${year}-${month}-${day}T00:00:00`);
+}
+
 export async function POST(req: Request) {
     try {
         await connectDB();
@@ -59,65 +74,55 @@ export async function POST(req: Request) {
         }
 
         // ==========================================
-        // VALIDAÇÃO DE ANUIDADE E PERÍODO DE TESTE (7 DIAS)
+        // VALIDAÇÃO DE EXPIRAÇÃO E CARÊNCIA (FUSO BRASÍLIA)
         // ==========================================
-        const now = new Date();
-        const createdAt = new Date(tenant.createdAt);
-        const initialTrialEnd = new Date(createdAt);
-        initialTrialEnd.setDate(initialTrialEnd.getDate() + 7);
+        const now = getBrasiliaDate();
 
+        // Data base de expiração gravada no cadastro (ou criação)
         const expiresAt = tenant.subscriptionExpiresAt
-            ? new Date(tenant.subscriptionExpiresAt)
-            : initialTrialEnd;
+            ? getBrasiliaDate(new Date(tenant.subscriptionExpiresAt))
+            : getBrasiliaDate(new Date(tenant.createdAt));
+
+        // Período de carência de 7 dias após a data de expiração/criação
+        const gracePeriodEnd = new Date(expiresAt);
+        gracePeriodEnd.setDate(gracePeriodEnd.getDate() + 7);
 
         let warningMessage: string | null = null;
 
-        // Identifica se realmente está no trial de 7 dias (sem customização prévia de data)
-        const isTrial = !tenant.subscriptionExpiresAt || expiresAt <= initialTrialEnd;
-
-        if (!tenant.isAnuidadePaid) {
-            if (now > expiresAt) {
-                // Período expirado -> Bloqueio total com exigência de Pix
-                return NextResponse.json(
-                    {
-                        error: isTrial
-                            ? 'Seu período de teste gratuito de 7 dias expirou. Para desbloquear seu painel e anúncios, realize o pagamento da anuidade via Pix.'
-                            : 'Sua assinatura expirou. Para renovar seu acesso, entre em contato com o administrador ou realize o pagamento via Pix.',
-                        requiresPix: true,
-                        tenantId: tenant._id,
-                        tenantName: tenant.name,
-                        tenantPhone: tenant.phone,
-                        tenantEmail: tenant.email
-                    },
-                    { status: 403 }
-                );
-            } else {
-                // Apenas exibe o aviso se for o trial legítimo de 7 dias
-                if (isTrial) {
-                    const diffTime = expiresAt.getTime() - now.getTime();
-                    const daysLeft = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
-                    const formattedExpiresDate = expiresAt.toLocaleDateString('pt-BR', { timeZone: 'UTC' });
-
-                    warningMessage = `Atenção: Você está no período de teste gratuito. Seu acesso expira em ${formattedExpiresDate} (restam ${daysLeft} dia(s)). Regularize sua anuidade via Pix para garantir acesso contínuo.`;
-                }
+        // 1. Bloqueio total se passou da data de expiração + 7 dias de carência
+        if (now > gracePeriodEnd) {
+            if (tenant.isAnuidadePaid) {
+                tenant.isAnuidadePaid = false;
+                await tenant.save();
             }
-        } else {
-            // Se já pagou, mantém a carência de 10 dias após o vencimento da anuidade
-            const gracePeriodEnd = new Date(expiresAt);
-            gracePeriodEnd.setDate(gracePeriodEnd.getDate() + 10);
 
-            if (now > gracePeriodEnd) {
-                return NextResponse.json(
-                    { error: 'Sua anuidade venceu e o período de carência expirou. Para renovar seu acesso, entre em contato com o administrador pelo número (18) 99726-1236.' },
-                    { status: 403 }
-                );
-            } else if (now > expiresAt) {
-                const diffTime = gracePeriodEnd.getTime() - now.getTime();
-                const daysLeft = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
-                const formattedExpiresDate = expiresAt.toLocaleDateString('pt-BR', { timeZone: 'UTC' });
-                warningMessage = `Atenção: Sua anuidade venceu em ${formattedExpiresDate}. Você está no período de carência e possui mais ${daysLeft} dia(s) de acesso. Entre em contato para renovar: (18) 99726-1236.`;
-            }
+            return NextResponse.json(
+                {
+                    error: 'Seu prazo de carência de 7 dias expirou. Para desbloquear seu painel e anúncios, realize o pagamento da anuidade via Pix.',
+                    requiresPix: true,
+                    tenantId: tenant._id,
+                    tenantName: tenant.name,
+                    tenantPhone: tenant.phone,
+                    tenantEmail: tenant.email
+                },
+                { status: 403 }
+            );
         }
+        // 2. Período de carência (entre o dia do vencimento/criação e até 7 dias depois)
+        else if (now >= expiresAt) {
+            // Assim que entra nos 7 dias de carência, isAnuidadePaid se torna false
+            if (tenant.isAnuidadePaid) {
+                tenant.isAnuidadePaid = false;
+                await tenant.save();
+            }
+
+            const diffTime = gracePeriodEnd.getTime() - now.getTime();
+            const daysLeft = Math.max(0, Math.ceil(diffTime / (1000 * 60 * 60 * 24)));
+            const formattedExpiresAt = expiresAt.toLocaleDateString('pt-BR', { timeZone: 'America/Sao_Paulo' });
+
+            warningMessage = `Atenção: Sua assinatura venceu em ${formattedExpiresAt}. Você está no período de carência de 7 dias (restam ${daysLeft} dia(s)). Regularize sua anuidade via Pix para evitar o bloqueio.`;
+        }
+        // 3. Caso o usuário esteja com a anuidade válida (antes do vencimento): Nenhuma mensagem ou aviso é exibido.
         // ==========================================
 
         const token = jwt.sign(

@@ -1,21 +1,32 @@
 'use client';
 
-import { useEffect } from 'react';
+import { useEffect, useRef } from 'react';
 import { usePathname } from 'next/navigation';
 import Script from 'next/script';
 
-const FB_PIXEL_ID = '25597334726555091';
+const FB_PIXEL_ID = process.env.NEXT_PUBLIC_FB_PIXEL_ID;
 
 export default function FacebookPixel() {
     const pathname = usePathname();
+    const initialized = useRef(false);
 
     useEffect(() => {
+        // Evita disparar um PageView duplicado na montagem inicial 
+        // (já que o script base do pixel já dispara o primeiro PageView)
+        if (!initialized.current) {
+            initialized.current = true;
+            return;
+        }
+
         // Sempre que o usuário mudar de página (sem recarregar), avisa o Facebook
-        // Usamos (window as any).fbq para o TypeScript não reclamar
         if (typeof window !== 'undefined' && (window as any).fbq) {
             (window as any).fbq('track', 'PageView');
         }
     }, [pathname]);
+
+    if (!FB_PIXEL_ID) {
+        return null;
+    }
 
     return (
         <Script

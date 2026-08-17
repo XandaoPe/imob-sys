@@ -30,7 +30,7 @@ export default function PixModal({ isOpen, onClose, tenantId, tenantName = '', t
 
     const pixPayload = generatePixPayload(
         '18997261236',
-        119.90,
+        129.90,
         'Mota Carvalho Imoveis',
         'Presidente Epitacio',
         tenantId ? tenantId.substring(0, 25) : 'ANUIDADE'
@@ -49,7 +49,7 @@ export default function PixModal({ isOpen, onClose, tenantId, tenantName = '', t
     };
 
     const whatsappUrl = `https://wa.me/5518997261236?text=${encodeURIComponent(
-        `Olá, realizei o pagamento da anuidade Pix de R$ 119,90.\nDados: ${payerInfo}\nID: ${tenantId}`
+        `Olá, realizei o pagamento da anuidade Pix de R$ 129,90.\nDados: ${payerInfo}\nID: ${tenantId}`
     )}`;
 
     return (
@@ -64,7 +64,7 @@ export default function PixModal({ isOpen, onClose, tenantId, tenantName = '', t
 
                 <h3 className="text-xl font-bold text-gray-900 dark:text-white mb-1">Pagamento da Anuidade</h3>
                 <p className="text-xs text-gray-500 dark:text-gray-400 mb-4">
-                    Chave Pix: <strong className="text-blue-600 dark:text-blue-400">(18) 99726-1236</strong> | Valor: <strong className="text-green-600">R$ 119,90</strong>
+                    Chave Pix: <strong className="text-blue-600 dark:text-blue-400">(18) 99726-1236</strong> | Valor: <strong className="text-green-600">R$ 129,90</strong>
                 </p>
 
                 <div className="mb-4">

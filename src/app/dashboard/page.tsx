@@ -483,7 +483,7 @@ export default function Dashboard() {
                         onClick={() => setIsPixModalOpen(true)}
                         className="w-full sm:w-auto text-center px-5 py-2.5 bg-emerald-600 hover:bg-emerald-700 text-white font-bold rounded-lg text-sm shadow transition-colors flex items-center justify-center gap-2 shrink-0 cursor-pointer"
                     >
-                        💳 Pagar Anuidade via Pix (R$ 119,90)
+                        💳 Pagar Anuidade via Pix (R$ 129,90)
                     </button>
                 </div>
             )}
@@ -505,7 +505,7 @@ export default function Dashboard() {
                         onClick={() => setIsPixModalOpen(true)}
                         className="w-full sm:w-auto text-center px-5 py-2.5 bg-emerald-600 hover:bg-emerald-700 text-white font-bold rounded-lg text-sm shadow transition-colors flex items-center justify-center gap-2 shrink-0 cursor-pointer"
                     >
-                        💳 Regularizar via Pix (R$ 119,90)
+                        💳 Regularizar via Pix (R$ 129,90)
                     </button>
                 </div>
             )}

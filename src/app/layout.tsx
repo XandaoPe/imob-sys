@@ -2,6 +2,8 @@ import type { Metadata } from 'next';
 import { Inter } from 'next/font/google';
 import './globals.css';
 import { ThemeProvider } from '@/context/ThemeContext';
+// ⬇️ [NOVO] Importe o componente do Pixel
+import FacebookPixel from '@/components/FacebookPixel';
 
 const inter = Inter({ subsets: ['latin'] });
 
@@ -24,6 +26,8 @@ export default function RootLayout({
         <ThemeProvider>
           {children}
         </ThemeProvider>
+        {/* ⬇️ [NOVO] Pixel adicionado aqui - funciona sem atrapalhar o layout */}
+        <FacebookPixel />
       </body>
     </html>
   );

@@ -55,7 +55,7 @@ export default function AdminMasterDashboard() {
     const [editTenantPassword, setEditTenantPassword] = useState('');
 
     const [pixModalTenant, setPixModalTenant] = useState<Corretor | null>(null);
-    const [pixAmount, setPixAmount] = useState('119.90');
+    const [pixAmount, setPixAmount] = useState('129.90');
     const [pixPaymentDate, setPixPaymentDate] = useState('');
 
     const [loading, setLoading] = useState(true);
@@ -404,7 +404,7 @@ export default function AdminMasterDashboard() {
                         onOpenPixModal={(t) => {
                             setPixModalTenant(t);
                             setPixPaymentDate(new Date().toISOString().split('T')[0]);
-                            setPixAmount('119.90');
+                            setPixAmount('129.90');
                         }}
                         onOpenEditModal={(t, expStr) => {
                             setEditingTenantLimits(t);

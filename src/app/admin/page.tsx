@@ -6,6 +6,8 @@ import EditTenantModal from './components/EditTenantModal';
 import EditItemModal from './components/EditItemModal';
 import ItemsTable from './components/ItemsTable';
 import TenantsTable from './components/TenantsTable';
+import VisitorsTable from './components/VisitorsTable';
+import VisitorDetailsModal from './components/VisitorDetailsModal';
 
 interface Corretor {
     _id: string;
@@ -34,10 +36,43 @@ interface Registro {
     };
 }
 
+interface Visitor {
+    _id: string;
+    tenantId: any;
+    sessionId: string;
+    ip: string;
+    browser: string;
+    os: string;
+    device: string;
+    language: string;
+    screenResolution: string;
+    referrer: string;
+    country: string;
+    region: string;
+    city: string;
+    isp: string;
+    enteredAt: string;
+    lastActivityAt: string;
+    durationSeconds: number;
+    scrollDepthPercent: number;
+    events: any[];
+}
+
+interface VisitorStats {
+    totalVisits: number;
+    uniqueVisitors: number;
+    totalWhatsApp: number;
+    totalShares: number;
+    visitsByDay: { _id: string; count: number }[];
+    topCities: { _id: string; count: number }[];
+}
+
 export default function AdminMasterDashboard() {
     const [tenants, setTenants] = useState<Corretor[]>([]);
     const [items, setItems] = useState<Registro[]>([]);
-    const [activeTab, setActiveTab] = useState<'items' | 'tenants'>('items');
+    const [visitors, setVisitors] = useState<Visitor[]>([]);
+    const [visitorStats, setVisitorStats] = useState<VisitorStats | null>(null);
+    const [activeTab, setActiveTab] = useState<'items' | 'tenants' | 'visitors'>('items');
 
     const [editingItem, setEditingItem] = useState<Registro | null>(null);
     const [editTitle, setEditTitle] = useState('');
@@ -57,6 +92,9 @@ export default function AdminMasterDashboard() {
     const [pixModalTenant, setPixModalTenant] = useState<Corretor | null>(null);
     const [pixAmount, setPixAmount] = useState('129.90');
     const [pixPaymentDate, setPixPaymentDate] = useState('');
+
+    // ✅ Estado para detalhes do visitante
+    const [selectedVisitor, setSelectedVisitor] = useState<Visitor | null>(null);
 
     const [loading, setLoading] = useState(true);
     const [errorMsg, setErrorMsg] = useState<string | null>(null);
@@ -94,6 +132,16 @@ export default function AdminMasterDashboard() {
             });
             const dataTenants = await resTenants.json();
             setTenants(dataTenants);
+
+            // ✅ Busca visitantes
+            const resVisitors = await fetch('/api/admin/visitors?limit=200', {
+                headers: { Authorization: `Bearer ${token}` }
+            });
+            if (resVisitors.ok) {
+                const dataVisitors = await resVisitors.json();
+                setVisitors(dataVisitors.visits || []);
+                setVisitorStats(dataVisitors.stats || null);
+            }
 
         } catch (err: any) {
             setErrorMsg(err.message || 'Você não tem permissão para visualizar esta página.');
@@ -333,6 +381,12 @@ export default function AdminMasterDashboard() {
                 />
             )}
 
+            {/* ✅ MODAL DE DETALHES DO VISITANTE */}
+            <VisitorDetailsModal
+                visitor={selectedVisitor}
+                onClose={() => setSelectedVisitor(null)}
+            />
+
             <header className="max-w-7xl mx-auto border-b border-gray-800 pb-6 mb-8 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
                 <div>
                     <div className="flex items-center gap-2 mb-1">
@@ -351,43 +405,50 @@ export default function AdminMasterDashboard() {
                 </button>
             </header>
 
-            <section className="max-w-7xl mx-auto grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4 mb-8">
+            <section className="max-w-7xl mx-auto grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-4 mb-8">
                 <div className="bg-gray-800/40 border border-gray-800 p-5 rounded-xl">
                     <p className="text-xs font-semibold text-gray-400 uppercase tracking-wider">Total de Clientes</p>
                     <p className="text-3xl font-black text-blue-400 mt-1">{tenants.length}</p>
                 </div>
                 <div className="bg-gray-800/40 border border-gray-800 p-5 rounded-xl">
-                    <p className="text-xs font-semibold text-gray-400 uppercase tracking-wider">Total de Registros no Banco</p>
+                    <p className="text-xs font-semibold text-gray-400 uppercase tracking-wider">Total de Registros</p>
                     <p className="text-3xl font-black text-green-400 mt-1">{items.length}</p>
                 </div>
-                <div className="bg-gray-800/40 border border-gray-800 p-5 rounded-xl sm:col-span-2 md:col-span-1">
-                    <p className="text-xs font-semibold text-gray-400 uppercase tracking-wider">Status do Servidor</p>
-                    <p className="text-sm font-mono text-emerald-400 mt-2 flex items-center gap-1.5">
-                        <span className="w-2.5 h-2.5 rounded-full bg-emerald-500 block animate-ping"></span>
-                        Operando em Segurança Completa
-                    </p>
+                <div className="bg-gray-800/40 border border-gray-800 p-5 rounded-xl">
+                    <p className="text-xs font-semibold text-gray-400 uppercase tracking-wider">Visitas Totais</p>
+                    <p className="text-3xl font-black text-purple-400 mt-1">{visitorStats?.totalVisits ?? 0}</p>
+                </div>
+                <div className="bg-gray-800/40 border border-gray-800 p-5 rounded-xl">
+                    <p className="text-xs font-semibold text-gray-400 uppercase tracking-wider">Visitantes Únicos</p>
+                    <p className="text-3xl font-black text-amber-400 mt-1">{visitorStats?.uniqueVisitors ?? 0}</p>
                 </div>
             </section>
 
             <section className="max-w-7xl mx-auto mb-6">
-                <div className="flex border-b border-gray-800 gap-2">
+                <div className="flex border-b border-gray-800 gap-2 overflow-x-auto">
                     <button
                         onClick={() => setActiveTab('items')}
-                        className={`px-5 py-3 text-sm font-bold border-b-2 transition ${activeTab === 'items' ? 'border-blue-500 text-blue-400 bg-gray-800/30' : 'border-transparent text-gray-400 hover:text-gray-200'}`}
+                        className={`px-5 py-3 text-sm font-bold border-b-2 transition whitespace-nowrap ${activeTab === 'items' ? 'border-blue-500 text-blue-400 bg-gray-800/30' : 'border-transparent text-gray-400 hover:text-gray-200'}`}
                     >
-                        Todos os Registros Cadastrados ({items.length})
+                        Registros ({items.length})
                     </button>
                     <button
                         onClick={() => setActiveTab('tenants')}
-                        className={`px-5 py-3 text-sm font-bold border-b-2 transition ${activeTab === 'tenants' ? 'border-blue-500 text-blue-400 bg-gray-800/30' : 'border-transparent text-gray-400 hover:text-gray-200'}`}
+                        className={`px-5 py-3 text-sm font-bold border-b-2 transition whitespace-nowrap ${activeTab === 'tenants' ? 'border-blue-500 text-blue-400 bg-gray-800/30' : 'border-transparent text-gray-400 hover:text-gray-200'}`}
                     >
-                        Lista de Clientes ({tenants.length})
+                        Clientes ({tenants.length})
+                    </button>
+                    <button
+                        onClick={() => setActiveTab('visitors')}
+                        className={`px-5 py-3 text-sm font-bold border-b-2 transition whitespace-nowrap ${activeTab === 'visitors' ? 'border-purple-500 text-purple-400 bg-gray-800/30' : 'border-transparent text-gray-400 hover:text-gray-200'}`}
+                    >
+                        👥 Visitantes ({visitors.length})
                     </button>
                 </div>
             </section>
 
             <main className="max-w-7xl mx-auto bg-gray-800 border border-gray-700/60 rounded-xl overflow-hidden shadow-xl">
-                {activeTab === 'items' ? (
+                {activeTab === 'items' && (
                     <ItemsTable
                         items={items}
                         onEdit={(item) => {
@@ -397,7 +458,9 @@ export default function AdminMasterDashboard() {
                         }}
                         onDelete={handleDeleteItem}
                     />
-                ) : (
+                )}
+
+                {activeTab === 'tenants' && (
                     <TenantsTable
                         tenants={tenants}
                         getExpirationDetails={getExpirationDetails}
@@ -418,6 +481,13 @@ export default function AdminMasterDashboard() {
                             setLimitSubscriptionExpiresAt(expStr);
                         }}
                         onDeleteTenant={handleDeleteTenant}
+                    />
+                )}
+
+                {activeTab === 'visitors' && (
+                    <VisitorsTable
+                        visitors={visitors}
+                        onOpenDetails={(v) => setSelectedVisitor(v)}
                     />
                 )}
             </main>

@@ -3,6 +3,7 @@
 import { useEffect, useState } from 'react';
 import { useParams } from 'next/navigation';
 import ThemeToggle from '@/components/ThemeToggle';
+import { useVisitorTracking } from '@/hooks/useVisitorTracking';
 
 interface Item {
     _id: string;
@@ -24,9 +25,11 @@ export default function PublicSharePage() {
     const [data, setData] = useState<TenantData | null>(null);
     const [loading, setLoading] = useState(true);
     const [activeIndexes, setActiveIndexes] = useState<{ [key: string]: number }>({});
-
-    // Estado para controlar o item ativo e o índice da imagem no visualizador em tela cheia
     const [activeViewer, setActiveViewer] = useState<{ item: Item; currentIdx: number } | null>(null);
+    const [expandedItems, setExpandedItems] = useState<{ [key: string]: boolean }>({});
+
+    const tenantId = typeof params?.id === 'string' ? params.id : '';
+    const { trackEvent } = useVisitorTracking(tenantId);
 
     useEffect(() => {
         if (!params?.id) return;
@@ -65,7 +68,6 @@ export default function PublicSharePage() {
         setActiveIndexes(prev => ({ ...prev, [itemId]: current - 1 < 0 ? max - 1 : current - 1 }));
     };
 
-    // Funções de navegação exclusivas para o modo Tela Cheia
     const nextViewerImage = (max: number) => {
         if (!activeViewer) return;
         setActiveViewer(prev => prev ? {
@@ -82,8 +84,9 @@ export default function PublicSharePage() {
         } : null);
     };
 
-    // Função que abre a janela nativa de compartilhar do celular
     const handleSharePage = async () => {
+        trackEvent('share', undefined, { page: 'public_share' });
+
         if (navigator.share) {
             try {
                 await navigator.share({
@@ -102,6 +105,19 @@ export default function PublicSharePage() {
                 console.error("Erro ao copiar", err);
             }
         }
+    };
+
+    const toggleExpand = (itemId: string) => {
+        setExpandedItems(prev => ({
+            ...prev,
+            [itemId]: !prev[itemId]
+        }));
+    };
+
+    // ✅ Abre o visualizador e rastreia
+    const openViewer = (item: Item, currentIdx: number) => {
+        trackEvent('view_image', item._id, { imageIndex: currentIdx });
+        setActiveViewer({ item, currentIdx });
     };
 
     if (loading) {
@@ -123,8 +139,6 @@ export default function PublicSharePage() {
     return (
         <div className="min-h-screen bg-gray-50 dark:bg-gray-950 p-6 text-gray-800 dark:text-gray-100 transition-colors duration-200">
             <header className="max-w-5xl mx-auto text-center mb-12 mt-6 bg-white dark:bg-gray-900 p-6 rounded-2xl border border-gray-200 dark:border-gray-800 shadow-xs flex flex-col items-center relative">
-
-                {/* Botão para alternar entre tema claro e escuro */}
                 <div className="absolute top-4 right-4">
                     <ThemeToggle />
                 </div>
@@ -138,7 +152,13 @@ export default function PublicSharePage() {
                         <svg className="w-4 h-4" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
                             <path strokeLinecap="round" strokeLinejoin="round" d="M3 5a2 2 0 012-2h3.28a1 1 0 01.94.725l.548 2.2a1 1 0 01-.321.988l-1.305.98a10.582 10.582 0 004.872 4.872l.98-1.305a1 1 0 01.988-.321l2.2.548a1 1 0 01.725.94V19a2 2 0 01-2 2h-1C9.716 21 3 14.284 3 6V5z" />
                         </svg>
-                        <a href={`https://wa.me/55${data.tenantPhone}`} target="_blank" rel="noopener noreferrer" className="hover:underline">
+                        <a
+                            href={`https://wa.me/55${data.tenantPhone}`}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="hover:underline"
+                            onClick={() => trackEvent('click_whatsapp', undefined, { source: 'header' })}
+                        >
                             WhatsApp: {formatDisplayPhone(data.tenantPhone)}
                         </a>
                     </div>
@@ -150,6 +170,7 @@ export default function PublicSharePage() {
                             href={data.businessCardLink}
                             target="_blank"
                             rel="noopener noreferrer"
+                            onClick={() => trackEvent('click_business_card')}
                             className="w-full bg-gradient-to-r from-blue-600 to-indigo-600 dark:from-blue-500 dark:to-indigo-500 text-white py-2.5 px-4 rounded-xl text-xs font-semibold flex items-center justify-center gap-1.5 hover:from-blue-700 hover:to-indigo-700 shadow-sm transition-all transform hover:-translate-y-0.5"
                         >
                             <svg className="w-4 h-4" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
@@ -166,6 +187,7 @@ export default function PublicSharePage() {
                             href={data.websiteLink}
                             target="_blank"
                             rel="noopener noreferrer"
+                            onClick={() => trackEvent('click_website')}
                             className="w-full bg-slate-800 dark:bg-slate-700 text-white py-2.5 px-4 rounded-xl text-xs font-semibold flex items-center justify-center gap-1.5 hover:bg-slate-900 dark:hover:bg-slate-600 shadow-sm transition-all transform hover:-translate-y-0.5"
                         >
                             <svg className="w-4 h-4" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
@@ -176,7 +198,6 @@ export default function PublicSharePage() {
                     </div>
                 )}
 
-                {/* BOTÃO COMPARTILHAR */}
                 <div className="mt-2 w-full max-w-sm">
                     <button
                         type="button"
@@ -199,6 +220,7 @@ export default function PublicSharePage() {
                         {data.items.map((item) => {
                             const gallery = item.images || [];
                             const currentIdx = activeIndexes[item._id] || 0;
+                            const isExpanded = expandedItems[item._id] || false;
 
                             return (
                                 <div key={item._id} className="bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-800 rounded-xl overflow-hidden shadow-sm hover:shadow-md transition flex flex-col justify-between">
@@ -209,7 +231,7 @@ export default function PublicSharePage() {
                                                     src={gallery[currentIdx]}
                                                     className="max-w-full max-h-full object-contain rounded-lg cursor-pointer transition transform hover:scale-[1.02]"
                                                     alt={item.title}
-                                                    onClick={() => setActiveViewer({ item, currentIdx })}
+                                                    onClick={() => openViewer(item, currentIdx)}
                                                 />
 
                                                 {gallery.length > 1 && (
@@ -230,7 +252,35 @@ export default function PublicSharePage() {
 
                                         <div className="p-5 flex-1">
                                             <h3 className="font-bold text-gray-900 dark:text-white text-lg leading-snug mb-2">{item.title}</h3>
-                                            <p className="text-sm text-gray-600 dark:text-gray-300 whitespace-pre-wrap">{item.description}</p>
+
+                                            <div className="relative">
+                                                <p className={`text-sm text-gray-600 dark:text-gray-300 whitespace-pre-wrap ${!isExpanded ? 'line-clamp-4' : ''}`}>
+                                                    {item.description}
+                                                </p>
+
+                                                {item.description.length > 150 && (
+                                                    <button
+                                                        onClick={() => toggleExpand(item._id)}
+                                                        className="mt-1 text-xs font-bold text-blue-600 dark:text-blue-400 hover:text-blue-800 dark:hover:text-blue-300 transition-colors flex items-center gap-1"
+                                                    >
+                                                        {isExpanded ? (
+                                                            <>
+                                                                Ver menos
+                                                                <svg className="w-3 h-3" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
+                                                                    <path strokeLinecap="round" strokeLinejoin="round" d="M5 15l7-7 7 7" />
+                                                                </svg>
+                                                            </>
+                                                        ) : (
+                                                            <>
+                                                                Ver mais
+                                                                <svg className="w-3 h-3" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
+                                                                    <path strokeLinecap="round" strokeLinejoin="round" d="M19 9l-7 7-7-7" />
+                                                                </svg>
+                                                            </>
+                                                        )}
+                                                    </button>
+                                                )}
+                                            </div>
                                         </div>
                                     </div>
                                 </div>
@@ -240,13 +290,19 @@ export default function PublicSharePage() {
                 )}
             </main>
 
-            {/* MODAL / LIGHTBOX: Tela Inteira com desfoque de fundo e Carrossel */}
+            {/* ⬇️ AVISO DE PRIVACIDADE / LGPD */}
+            <footer className="max-w-5xl mx-auto mt-12 mb-6 text-center">
+                <p className="text-[11px] text-gray-400 dark:text-gray-500 leading-relaxed px-4">
+                    🔒 Esta página registra dados anônimos de navegação (IP, dispositivo e ações) para fins de segurança e
+                    estatísticas de uso, conforme a LGPD. Ao continuar navegando, você concorda com esta coleta.
+                </p>
+            </footer>
+
             {activeViewer && (
                 <div
                     className="fixed inset-0 bg-black/80 backdrop-blur-xs z-50 flex items-center justify-center p-4 animate-fade-in"
                     onClick={() => setActiveViewer(null)}
                 >
-                    {/* Botão de fechar (X) fixado no canto superior direito */}
                     <button
                         className="absolute top-4 right-4 bg-white/10 text-white rounded-full p-2 hover:bg-white/20 transition-all"
                         onClick={() => setActiveViewer(null)}
@@ -256,10 +312,7 @@ export default function PublicSharePage() {
                         </svg>
                     </button>
 
-                    {/* Container da Imagem em proporção grande / tela cheia */}
                     <div className="relative w-full max-w-4xl max-h-[90vh] flex items-center justify-center">
-
-                        {/* Botões do Carrossel em Tela Cheia */}
                         {(activeViewer.item.images?.length || 0) > 1 && (
                             <>
                                 <button
@@ -274,7 +327,6 @@ export default function PublicSharePage() {
                                 >
                                     &gt;
                                 </button>
-                                {/* Contador de imagens em tela cheia */}
                                 <div className="absolute bottom-4 left-1/2 -translate-x-1/2 bg-black/60 text-white text-xs px-3 py-1 rounded-full font-mono z-50">
                                     {activeViewer.currentIdx + 1} / {activeViewer.item.images!.length}
                                 </div>

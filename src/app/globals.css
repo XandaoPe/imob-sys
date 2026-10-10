@@ -2,3 +2,20 @@
 
 /* Ativa o suporte ao modo escuro via classe .dark no Tailwind v4 */
 @variant dark (&:where(.dark, .dark *));
+
+/* Animação de fade-in para tooltips e modais */
+@keyframes fadeIn {
+    from {
+        opacity: 0;
+        transform: translateY(4px);
+    }
+
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+.animate-fadeIn {
+    animation: fadeIn 0.2s ease-out forwards;
+}
